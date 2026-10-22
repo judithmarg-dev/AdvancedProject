@@ -1,0 +1,9 @@
+# Specs
+
+Una spec por fase de `PLAN.md` o por cambio funcional. Flujo y reglas en `../CLAUDE.md`.
+
+Estados: `Draft` → `Approved` → `In progress` → `Implemented`.
+
+| # | Spec | Fase del plan | Estado |
+|---|---|---|---|
+| 001 | `001-skeleton` | Fase 0 | Approved  |

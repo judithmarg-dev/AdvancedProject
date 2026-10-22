@@ -1,0 +1,80 @@
+# Plan · 001 Esqueleto del proyecto
+
+## Enfoque
+Monorepo pnpm con tres paquetes (`shared`, `server`, `client`) y Vitest como runner. El servidor es un
+Colyseus mínimo con una `OfficeRoom` sin estado que solo registra altas y bajas; el cliente Vite + React
+abre la página y se une a esa sala, logueando conexión, desconexión y error. La lógica de conexión del
+cliente y el arranque del servidor se aíslan en funciones pequeñas para poder probarlas sin navegador.
+Nada de escena 3D ni estado de jugadores (specs 002 y 003).
+
+## Cambios por capa
+### shared
+- `shared/types.ts`: constantes `ROOM_NAME = "office"`, `DEFAULT_SERVER_PORT = 2567`, `DEFAULT_CLIENT_PORT = 5173`.
+- `shared/package.json` (`@office/shared`), exporta `types.ts` directamente (sin paso de compilación).
+- Prueba de constantes (`shared/types.test.ts`).
+
+### server
+- `server/src/config.ts`: lee `PORT` (por defecto `DEFAULT_SERVER_PORT`); carga `../.env` con `process.loadEnvFile` si existe (sin dependencia nueva).
+- `server/src/rooms/OfficeRoom.ts`: sala sin estado; `onJoin`/`onLeave` registran en consola (español).
+- `server/src/index.ts`: `startServer(port)` registra `OfficeRoom` bajo `ROOM_NAME` y hace `listen`; registra la dirección en consola. Si `listen` falla con `EADDRINUSE`, loguea "puerto en uso" y sale con código 1.
+- Scripts: `dev` (`tsx watch`), `build` (`tsc --noEmit`), `test` (`vitest run`).
+
+### client
+- `client/` Vite + React + TS; `index.html`, `src/main.tsx`, `src/App.tsx` mínimo (título, sin escena).
+- `client/src/net/connect.ts`: `connectToServer(url, deps)` hace `joinOrCreate(ROOM_NAME)`; loguea conexión exitosa, desconexión (`onLeave`) y error de conexión (`console.error`) sin lanzar a la UI. `deps` permite inyectar el cliente y el logger en pruebas.
+- URL del servidor desde `VITE_SERVER_URL` (por defecto `ws://localhost:2567`); `vite.config.ts` con `envDir: ".."` (un solo `.env` raíz) y puerto 5173.
+- Carpetas `scene/`, `store/`, `ui/` quedan vacías hasta que se necesiten (no se crean).
+
+### raíz
+- `package.json` (private, `engines.node >=20.12`), `pnpm-workspace.yaml`, `tsconfig.base.json` (strict), `.gitignore` (incluye `.env`), `.env.example` (`PORT`, `VITE_SERVER_URL`).
+- Scripts raíz: `dev` → `pnpm -r --parallel run dev`; `build` → `pnpm -r run build`; `test` → `pnpm -r run test`.
+
+## Contratos de red
+| Mensaje / endpoint | Dirección | Payload (tipo en `shared/`) | Respuestas / errores |
+|---|---|---|---|
+| Unirse a la sala `ROOM_NAME` (`joinOrCreate`) | cliente → servidor | ninguno (sin opciones) | Éxito: sala unida. Error: el cliente lo registra en consola. |
+| Cierre de sesión (servidor detenido / cliente sale) | ambos | ninguno | `onLeave` en cliente; `onLeave` en servidor. |
+
+No se definen mensajes de juego en esta spec.
+
+## Verificación de constitución
+| Artículo | ¿Cumple? | Justificación |
+|---|---|---|
+| I | Sí | La spec describe qué y por qué; el cómo vive aquí. |
+| II | Sí | No hay estado ni mensajes de cliente; la sala es del servidor. |
+| III | Sí | `ROOM_NAME` y puertos solo en `shared/types.ts`; `strict` en `tsconfig.base.json`. |
+| IV | Sí | Cada tarea de código va precedida de su test fallido. |
+| V | Sí | Dependencias anotadas en Decisiones (abajo y en `PLAN.md`). |
+| VI | Sí | Variables en `.env`, `.env.example` versionado, `.env` en `.gitignore`. |
+| VII | Sí | Solo esqueleto; sin three/r3f/zustand hasta la spec 002. |
+
+## Decisiones
+- **Dependencias nuevas** (también en `PLAN.md` > Decisiones):
+  - Raíz/dev: `typescript`, `vitest`, `tsx`.
+  - server: `colyseus`, `@colyseus/ws-transport`, `@colyseus/testing` (dev).
+  - client: `react`, `react-dom`, `colyseus.js`, `vite`, `@vitejs/plugin-react`, `@types/react`, `@types/react-dom` (dev).
+- **Sin `dotenv`:** `process.loadEnvFile` (Node ≥ 20.12) cubre la carga; por eso `engines` pide 20.12 y no 20.0. Descartado: `dotenv` (dependencia extra).
+- **Sin `concurrently`:** `pnpm -r --parallel` ya levanta client y server.
+- **`shared` sin compilar:** se consume como fuente TS (tsx y Vite lo resuelven). Descartado: `tsc` con project references (complica el dev). Consecuencia: `build` del servidor es verificación de tipos (`tsc --noEmit`); en producción se ejecuta con `tsx`. Aceptable para el MVP.
+- **Diferidos:** three, @react-three/fiber, drei, zustand (spec 002); livekit (spec 005).
+- **Tests de cliente en entorno `node`,** con cliente y logger inyectados; sin jsdom (no hace falta en esta fase).
+
+## Riesgos
+- **pnpm no funciona hoy en este WSL:** `pnpm -v` falla porque `corepack` resuelve a una ruta de Windows (`C:\mnt\c\nodejs\...`). Node es 24.12. T1 lo resuelve (por ejemplo `npm i -g pnpm` con el Node de Linux) antes de crear nada.
+- **Proyecto en `/mnt/c` (drvfs):** instalar con pnpm puede ser lento o fallar con enlaces simbólicos. Si ocurre, parar y proponer opción al humano.
+
+## Estrategia de pruebas
+| AC | Tipo | Archivo / razón |
+|---|---|---|
+| AC-1 | manual | `sdd-validate-impl`: levantar con `pnpm run dev` y ver los dos logs de escucha (procesos de larga vida y consola real). |
+| AC-2 | manual | `sdd-validate-impl`: abrir la página en el navegador y revisar la consola (necesita navegador). |
+| AC-3 | unit + manual | `client/src/net/connect.test.ts` (log de éxito con cliente simulado); confirmación real en `sdd-validate-impl`. |
+| AC-4 | integración | `server/src/rooms/OfficeRoom.test.ts` (`@colyseus/testing`: al unirse, se registra la conexión). |
+| AC-5 | unit + integración | `connect.test.ts` (`onLeave` → log de desconexión); `OfficeRoom.test.ts` (baja registrada); confirmación real en `sdd-validate-impl`. |
+| AC-6 | integración | `server/src/index.test.ts`: servidor arranca, se detiene y arranca de nuevo; un cliente se vuelve a unir. |
+| AC-7 | unit + manual | `connect.test.ts` (fallo → `console.error` sin lanzar); página sin pantalla en blanco en `sdd-validate-impl`. |
+| AC-8 | build | `pnpm run build` pasa en los tres paquetes (verificado en `sdd-verify`). |
+| AC-9 | build | `pnpm test` corre los tres paquetes; cada uno tiene ≥ 1 prueba (`shared/types.test.ts`, `server/*.test.ts`, `client/*.test.ts`). |
+| AC-10 | unit + build | `shared/types.test.ts` y `OfficeRoom.test.ts` (la sala se registra con `ROOM_NAME`); el fallo por cambio incompatible lo da `tsc` en `pnpm run build` (se comprueba una vez a mano en `sdd-verify`). |
+| AC-11 | unit | `shared/env.test.ts`: `.env.example` contiene `PORT` y `VITE_SERVER_URL`; `.gitignore` contiene `.env`. |
+| AC-12 | integración | `server/src/index.test.ts`: segundo `startServer` en el mismo puerto rechaza con `EADDRINUSE` y se loguea el error. |
