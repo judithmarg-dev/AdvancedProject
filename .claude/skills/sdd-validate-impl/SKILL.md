@@ -61,7 +61,7 @@ Cover, per `AC-n`, only what the changed server behavior / client screens affect
 3. **Errors** – empty name, server down or restarted, tab closed mid-session, mic/camera permission denied, LiveKit unreachable.
 4. **Different views** – two or more browser tabs/users, different window sizes, a second browser.
 
-State how to run the app (`pnpm run dev`, and the second tab URL; the `run` skill can launch it). Then **stop and wait**
+State how to run the app (`npm run dev`, and the second tab URL; the `run` skill can launch it). Then **stop and wait**
 for the developer's response. Do not proceed on assumptions.
 
 ### 4. Route on the developer's response

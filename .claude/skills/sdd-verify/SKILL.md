@@ -9,8 +9,8 @@ description: Verifies that a feature of the 3D virtual office meets its spec - e
 
 1. **Run everything:**
    ```bash
-   pnpm run build
-   pnpm test
+   npm run build
+   npm test
    ```
    If something fails, stop and report it. Don't keep verifying on a broken build.
 2. **Review `tasks.md`:** every task must be `[x]`.

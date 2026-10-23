@@ -54,7 +54,7 @@ Capas para el plan: `shared` → `server` → `client` (de dentro hacia fuera).
 
 ## Pruebas
 
-- Runner: Vitest (se instala en la spec 001 y se anota como decisión). `pnpm test` corre todos los workspaces.
+- Runner: Vitest (se instala en la spec 001 y se anota como decisión). `npm test` corre todos los workspaces.
 - Lógica pura (colisiones AABB, interpolación, volumen por distancia) → test unitario en `shared/` o `client/`.
 - Salas Colyseus → test de integración en `server/` con el cliente de `@colyseus/testing`.
 - Escena 3D, cámara, audio real y video → no se automatizan: se cubren en `sdd-validate-impl` y se anota el motivo en la trazabilidad.
@@ -62,7 +62,7 @@ Capas para el plan: `shared` → `server` → `client` (de dentro hacia fuera).
 
 ## Definición de hecho (por spec)
 
-- [ ] `pnpm run build` y `pnpm test` pasan.
+- [ ] `npm run build` y `npm test` pasan.
 - [ ] Todas las tareas `[x]`; cada `AC-n` con test o razón registrada.
 - [ ] "Hecho cuando" de la fase en `PLAN.md` cumplido.
 - [ ] Sin deriva entre spec y código; constitución respetada.
@@ -74,4 +74,4 @@ Capas para el plan: `shared` → `server` → `client` (de dentro hacia fuera).
 - Respuestas breves; no reexplicar decisiones ya cerradas.
 - Specs y docs en español; carpetas y código en inglés.
 - Commits: `feat(NNN): T3 descripción corta`.
-- Comandos: `pnpm run dev` (client + server), `pnpm run build`, `pnpm test`.
+- Comandos: `npm run dev` (client + server), `npm run build`, `npm test`.

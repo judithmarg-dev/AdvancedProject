@@ -10,8 +10,8 @@ description: Implements the tasks in a spec's tasks.md for the 3D virtual office
 - The spec must be `In progress` and have `plan.md` and `tasks.md`.
 - Run the tests to confirm you start from green:
   ```bash
-  pnpm test
-  pnpm run build
+  npm test
+  npm run build
   ```
   (Before spec 001 delivers the scripts, skip what does not exist yet and say so.)
 

@@ -1,6 +1,6 @@
 # 001 · Esqueleto del proyecto
 
-- **Estado:** Approved
+- **Estado:** Implemented
 - **Fase del plan:** 0
 - **Fecha:** 2026-10-21
 
@@ -32,7 +32,7 @@ Así las fases siguientes se apoyan en una conexión ya comprobada.
 ## Reglas de negocio
 - Un solo comando de desarrollo levanta cliente y servidor; un solo comando compila todo; un solo comando corre todas las pruebas.
 - Puertos por defecto: servidor 2567, cliente 5173; configurables por variable de entorno, y la dirección del servidor que usa el cliente también es configurable.
-- Gestor de paquetes: pnpm. Versión mínima de Node: 20 LTS.
+- Gestor de paquetes: npm (workspaces). Versión mínima de Node: 20 LTS.
 - Vitest es el runner de pruebas del proyecto.
 - El servidor acepta conexiones de cualquier cliente local en desarrollo; no hay autenticación ni nombre de usuario todavía.
 - La conexión de esta fase no sincroniza estado de jugadores ni envía mensajes de juego: solo establece y cierra la sesión.
@@ -54,6 +54,7 @@ Ninguno (es la primera spec).
 
 ## Clarificaciones
 - 2026-10-21 · ¿Gestor de paquetes? → pnpm (según `PLAN.md`); `CLAUDE.md` y los skills SDD se corrigen de npm a pnpm.
+- 2026-10-22 · Cambio de gestor (a petición del humano, tras fallos de enlaces simbólicos de pnpm en Windows/WSL) → npm workspaces. Reemplaza la respuesta anterior; ningún AC cambia.
 - 2026-10-21 · ¿Vitest en esta spec? → Sí; se anota en Decisiones de `PLAN.md` y en `plan.md`.
 - 2026-10-21 · ¿Puertos por defecto? → servidor 2567, cliente 5173.
 - 2026-10-21 · ¿Versión mínima de Node? → Node 20 LTS o superior.
@@ -62,5 +63,35 @@ Ninguno (es la primera spec).
 ## Trazabilidad
 | AC | Prueba (archivo / método) o razón de no automatizar |
 |---|---|
+| AC-1 | `server/src/server.test.ts` > "informa en consola la dirección donde escucha (AC-1)" (log del servidor). Manual: Validation log AC-1 ✅ (`npm run dev`, procesos de larga vida y consola real). |
+| AC-2 | Manual: Validation log AC-2 ✅. No automatizado: requiere navegador real. |
+| AC-3 | `client/src/net/connect.test.ts` > "se une a la sala compartida y registra la conexión (AC-3)". Manual: Validation log AC-3 ✅. |
+| AC-4 | `server/src/rooms/OfficeRoom.test.ts` > "registra en consola cuando un cliente se conecta (AC-4)". Manual: Validation log AC-4 ✅. |
+| AC-5 | `connect.test.ts` > "registra la desconexión sin romper nada (AC-5)"; `OfficeRoom.test.ts` > "registra en consola cuando un cliente se desconecta (AC-5)". Manual: Validation log AC-5 ✅. |
+| AC-6 | `server/src/server.test.ts` > "permite unirse, detenerse y volver a arrancar (AC-6)". Manual: Validation log AC-6 ✅. |
+| AC-7 | `connect.test.ts` > "registra un error claro y no lanza si no puede conectar (AC-7)". Manual: Validation log AC-7 ✅ (página sin pantalla en blanco). |
+| AC-8 | `npm run build` pasa en `shared`, `server` y `client` con `strict` (`tsconfig.base.json`); verificado en `sdd-verify` (2026-10-23). |
+| AC-9 | `npm test` corre los tres paquetes: 14 pruebas (`shared/types.test.ts`, `shared/env.test.ts`, `server/src/rooms/OfficeRoom.test.ts`, `server/src/server.test.ts`, `client/src/net/connect.test.ts`). |
+| AC-10 | `OfficeRoom.test.ts` > "registra la sala bajo el nombre compartido (AC-10)" y `shared/types.test.ts`; cliente (`connect.ts`) y servidor (`server.ts`, `config.ts`) importan de `@office/shared`. La rotura de compilación se comprobó a mano en T13 (el compilador no se automatiza). |
+| AC-11 | `shared/env.test.ts` > ".env.example documenta todas las variables del proyecto" y ".env no se versiona". |
+| AC-12 | `server/src/server.test.ts` > "rechaza con EADDRINUSE y lo informa si el puerto está ocupado (AC-12)" y "sale con código 1 e informa del puerto en uso al arrancar el proceso (AC-12)". Manual: Validation log AC-12 ✅. |
 
 ## Validation log
+2026-10-22 · Validación manual requerida (cambio visible en cliente y servidor). Pendiente de respuesta del desarrollador.
+
+Cómo correr: desde la raíz, `npm run dev`. Cliente en `http://localhost:5173`, servidor en `2567`. Para la segunda pestaña, abrir la misma URL.
+
+| Ref | Escenario (pasos) | Resultado esperado | Resultado (✅/❌/n.a.) | Notas |
+|---|---|---|---|---|
+| AC-1 | Ejecutar `npm run dev` en la raíz. | Cliente y servidor arrancan a la vez; cada consola indica su dirección (5173 / 2567). |✅ | |
+| AC-2 | Abrir `http://localhost:5173` con todo en marcha; abrir DevTools > Consola. | La página carga sin errores en la consola. |✅ | Manifest: Line: 1, column: 1, Syntax error.But everything works fine. |
+| AC-3 | Recargar la página con el servidor activo. | La consola del navegador muestra el mensaje de conexión exitosa. | ✅ | |
+| AC-4 | Mirar la consola del servidor al abrir la página. | El servidor registra la conexión del cliente. | ✅ | |
+| AC-5 | Con la página conectada, detener el servidor (Ctrl+C solo del servidor, o matar su proceso). Cerrar también una pestaña con el servidor activo. | El navegador muestra el mensaje de desconexión y la página no se rompe. Al cerrar la pestaña, el servidor registra la salida. | ✅ | |
+| AC-6 | Volver a levantar el servidor y recargar la página. | El cliente se conecta de nuevo (como AC-3). |✅ | |
+| AC-7 | Con el servidor detenido, abrir la página. | La página carga (no queda en blanco) y la consola muestra un error claro de que no se pudo conectar. |✅  | |
+| AC-12 | Con el puerto 2567 ocupado (otra terminal con el servidor corriendo), ejecutar el servidor otra vez. | Informa "puerto en uso" y sale con error; no falla en silencio. | ✅ | |
+| Efectos laterales | Revisar que la página no muestre advertencias nuevas ni consumo anormal. | Sin errores extra; no hay fases previas que probar. | ✅ | |
+| Varias vistas | Abrir dos pestañas (o un segundo navegador) a la vez. | Ambas se conectan; el servidor registra dos conexiones y dos salidas al cerrarlas. | ✅ | |
+
+Approved by Judith Paco, 2026-10-23
