@@ -20,7 +20,7 @@ escalado a más de ~20 usuarios, personalización de avatares.
 | Servidor tiempo real | Node + Colyseus | Salas y sincronización de estado listas |
 | Audio/video | LiveKit (Cloud free tier o Docker local) | Evita montar un SFU propio |
 | Modelos | glTF/GLB, sala propia en Blender | Aprovecha el modelado 3D |
-| Monorepo | pnpm workspaces: `client/`, `server/`, `shared/` | Tipos compartidos |
+| Monorepo | npm workspaces: `client/`, `server/`, `shared/` | Tipos compartidos |
 
 ## Estructura objetivo
 ```
@@ -35,8 +35,8 @@ AdvancedProject/
 ## Fases (marcar [x] al terminar)
 
 ### Fase 0: Esqueleto (~1 h)
-- [ ] Monorepo con workspaces, TS configurado, `pnpm run dev` levanta client y server.
-- [ ] Crear CLAUDE.md con las convenciones de abajo.
+- [x] Monorepo con workspaces, TS configurado, `npm run dev` levanta client y server.
+- [x] Crear CLAUDE.md con las convenciones de abajo.
 - **Hecho cuando**: la página carga y el cliente se conecta al servidor (log en consola).
 
 ### Fase 1: Escena y movimiento local
@@ -82,22 +82,26 @@ Múltiples salas, editor de mapas, auth, persistencia, avatares personalizables,
 - Respuestas breves: no reexplicar decisiones ya cerradas aquí.
 
 ## Estado actual (actualizar al terminar cada sesión)
-- Fecha: 2026-10-21
-- Fase en curso: Fase 0 (sin iniciar)
+- Fecha: 2026-10-23
+- Fase en curso: Fase 1 (sin iniciar). Fase 0 completada (spec 001 `Implemented`)
 - Modelo en uso: Opus 5.5
-- Último logro: plan creado y asignación de modelo por fase
+- Último logro: spec 001 verificada: 12 AC cubiertos, `npm run build` y `npm test` pasan (14 pruebas), validación manual aprobada
 - Bloqueos: ninguno
-- Siguiente paso concreto: crear monorepo y scripts de desarrollo
+- Siguiente paso concreto: `/sdd-spec` de la Fase 1 (escena, avatar, cámara y colisiones; spec 002)
 
 ## Decisiones (agregar al tomar nuevas)
 - 2026-10-17: stack fijado según tabla superior.
 - 2026-10-21: se trabajará con Opus 5.5 como modelo principal; ver "Modelo por fase".
+- 2026-10-22 (spec 001): Vitest como runner de pruebas. Dependencias de la fase 0: `typescript`, `vitest`, `tsx`, `@types/node` (raíz); `concurrently` (raíz), `@colyseus/core` y `@colyseus/ws-transport` (server; no el meta-paquete `colyseus`, que arrastra `uWebSockets.js` desde git); `@colyseus/testing`, `@colyseus/sdk` y `@colyseus/tools` (server, dev; peers de testing); `react`, `react-dom`, `@colyseus/sdk` (cliente; en Colyseus 0.18 sustituye a `colyseus.js`), `vite`, `@vitejs/plugin-react`, `@types/react`, `@types/react-dom` (cliente, dev).
+- 2026-10-22 (spec 001): se cambia el gestor de paquetes de pnpm a **npm workspaces** a petición del humano: pnpm (Windows, invocado desde WSL) creaba enlaces simbólicos de WSL que Windows no resolvía. Reemplaza la fila "Monorepo" de la tabla de stack. Consecuencias: `shared` se enlaza con `"@office/shared": "*"`; `concurrently` (dev, raíz) levanta client y server en paralelo porque npm no tiene modo paralelo; se eliminan `pnpm-workspace.yaml` y `pnpm-lock.yaml`.
+- 2026-10-22 (spec 001): Node mínimo 20.12 (`process.loadEnvFile` sustituye a `dotenv`); puertos por defecto 2567 (servidor) y 5173 (cliente).
+- 2026-10-23 (spec 001): Vite con `strictPort: true` en 5173: si el puerto está ocupado, falla en lugar de saltar a otro (el cliente debe estar siempre en el puerto por defecto). Al pasar, `concurrently` también detiene el servidor; liberar el puerto y relanzar.
+- 2026-10-22 (spec 001): entorno: el proyecto vive en `C:\Users\Judith.Paco\AdvancedProject` y se instala/ejecuta desde una terminal nativa de Windows. No ejecutar `npm install` desde WSL en este árbol: `node` en WSL es un enlace a `node.exe` y se crearían enlaces simbólicos de WSL que Windows no resuelve. Si pasa, borrar `node_modules` y reinstalar desde Windows.
 
 ## Metodología
 Cada fase se ejecuta como una spec SDD (`specs/NNN-nombre/`) con el flujo de `CLAUDE.md`:
 `sdd-spec > sdd-clarify > sdd-plan > sdd-implement > [sdd-validate-impl] > sdd-verify`.
 Mapa: spec 001 = Fase 0, 002 = Fase 1, 003 = Fase 2, 004 = Fase 3, 005 = Fase 4, 006 = Fase 5.
-Decisión pendiente para la spec 001: instalar Vitest como runner de pruebas.
 
 ## Prompt de retoma para otro modelo
 > Lee PLAN.md y CLAUDE.md. Revisa "Estado actual", continúa con el siguiente paso
