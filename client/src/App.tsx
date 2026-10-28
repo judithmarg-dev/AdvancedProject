@@ -1,3 +1,11 @@
+import { Scene } from "./scene/Scene";
+import { ControlsHint } from "./ui/ControlsHint";
+
 export function App() {
-  return <h1>Oficina virtual</h1>;
+  return (
+    <>
+      <Scene />
+      <ControlsHint />
+    </>
+  );
 }

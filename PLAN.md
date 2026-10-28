@@ -40,11 +40,11 @@ AdvancedProject/
 - **Hecho cuando**: la página carga y el cliente se conecta al servidor (log en consola).
 
 ### Fase 1: Escena y movimiento local
-- [ ] Canvas R3F con luces, suelo y una sala (empezar con cajas; luego GLB propio).
-- [ ] Avatar (cápsula) controlado con WASD.
-- [ ] Cámara tercera persona que sigue al avatar.
-- [ ] Colisiones simples con paredes (límites AABB, sin motor de física).
-- **Hecho cuando**: caminas por la sala sin atravesar paredes a 60 fps.
+- [x] Canvas R3F con luces, suelo y una sala (empezar con cajas; luego GLB propio).
+- [x] Avatar (cápsula) controlado con WASD.
+- [x] Cámara tercera persona que sigue al avatar.
+- [x] Colisiones simples con paredes (límites AABB, sin motor de física).
+- **Hecho cuando**: caminas por la sala sin atravesar paredes a 60 fps. ✔ (validado a mano el 2026-10-27, spec 002)
 
 ### Fase 2: Multijugador
 - [ ] `OfficeRoom` en Colyseus con schema `Player {id, name, x, z, rotY, color}`.
@@ -82,12 +82,12 @@ Múltiples salas, editor de mapas, auth, persistencia, avatares personalizables,
 - Respuestas breves: no reexplicar decisiones ya cerradas aquí.
 
 ## Estado actual (actualizar al terminar cada sesión)
-- Fecha: 2026-10-23
-- Fase en curso: Fase 1 (sin iniciar). Fase 0 completada (spec 001 `Implemented`)
-- Modelo en uso: Opus 5.5
-- Último logro: spec 001 verificada: 12 AC cubiertos, `npm run build` y `npm test` pasan (14 pruebas), validación manual aprobada
+- Fecha: 2026-10-27
+- Fase en curso: Fase 1 cerrada (spec 002 `Implemented`); siguiente, Fase 2 (spec 003)
+- Modelo en uso: Opus 5
+- Último logro: spec 002 cerrada (T1–T25): `shared/world.ts` con medidas y colisión AABB, escena R3F (sala con ventanal y mobiliario, avatar cápsula animado, cámara en tercera persona) y aviso de controles. Validación manual aprobada el 2026-10-27 tras corregir el muro sur traslúcido, la rotación del ventanal, la caja de la pared este y el punto de entrada. `npm run build` y `npm test` pasan (69 pruebas).
 - Bloqueos: ninguno
-- Siguiente paso concreto: `/sdd-spec` de la Fase 1 (escena, avatar, cámara y colisiones; spec 002)
+- Siguiente paso concreto: `/sdd-spec` de la spec 003 (Fase 2, multijugador)
 
 ## Decisiones (agregar al tomar nuevas)
 - 2026-10-17: stack fijado según tabla superior.
@@ -97,6 +97,8 @@ Múltiples salas, editor de mapas, auth, persistencia, avatares personalizables,
 - 2026-10-22 (spec 001): Node mínimo 20.12 (`process.loadEnvFile` sustituye a `dotenv`); puertos por defecto 2567 (servidor) y 5173 (cliente).
 - 2026-10-23 (spec 001): Vite con `strictPort: true` en 5173: si el puerto está ocupado, falla en lugar de saltar a otro (el cliente debe estar siempre en el puerto por defecto). Al pasar, `concurrently` también detiene el servidor; liberar el puerto y relanzar.
 - 2026-10-22 (spec 001): entorno: el proyecto vive en `C:\Users\Judith.Paco\AdvancedProject` y se instala/ejecuta desde una terminal nativa de Windows. No ejecutar `npm install` desde WSL en este árbol: `node` en WSL es un enlace a `node.exe` y se crearían enlaces simbólicos de WSL que Windows no resuelve. Si pasa, borrar `node_modules` y reinstalar desde Windows.
+
+- 2026-10-27 (spec 002): dependencias de la Fase 1 en `client/`: `three` (0.186), `@react-three/fiber` (9.8); dev: `@types/three`. `@react-three/drei` se descartó en la implementación (sin usos: todo sale de primitivas de three); se reevalúa en la Fase 5. `zustand` se difiere a la spec 003 (en la Fase 1 no hay estado compartido entre componentes: el movimiento vive en refs por fotograma). Medidas del mundo y colisión AABB (`shared/world.ts`) se ponen en `shared/` para que el servidor las use como autoridad en la spec 003.
 
 ## Metodología
 Cada fase se ejecuta como una spec SDD (`specs/NNN-nombre/`) con el flujo de `CLAUDE.md`:

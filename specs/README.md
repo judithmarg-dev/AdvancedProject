@@ -7,3 +7,4 @@ Estados: `Draft` → `Approved` → `In progress` → `Implemented`.
 | # | Spec | Fase del plan | Estado |
 |---|---|---|---|
 | 001 | `001-skeleton` | Fase 0 | Implemented |
+| 002 | `002-local-scene` | Fase 1 | Implemented |
