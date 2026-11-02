@@ -1,4 +1,5 @@
 import { createRoot } from "react-dom/client";
+import "./index.css";
 import { DEFAULT_SERVER_PORT } from "@office/shared";
 import { App } from "./App";
 import { connectToServer } from "./net/connect";
