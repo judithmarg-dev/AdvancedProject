@@ -1,10 +1,14 @@
-import { useRef } from "react";
+import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import type { Group, Mesh } from "three";
 import { AVATAR } from "@office/shared";
-import { PALETTE } from "./palette";
+import { PALETTE, shadeColor } from "./palette";
 import { breathingOffset, squashScale, walkBob } from "./animation";
+import { NameLabel } from "./NameLabel";
 import type { PlayerState } from "./usePlayerController";
+
+/** Lo que el avatar necesita leer en cada fotograma; lo escribe el controlador local o la interpolación. */
+export type AvatarMotion = Pick<PlayerState, "position" | "angle" | "speed" | "acceleration" | "elapsed">;
 
 const BODY_RADIUS = AVATAR.radius;
 const BODY_STRETCH = 1.22; // la cápsula es algo más alta que ancha
@@ -21,10 +25,12 @@ function Eye({ x }: { x: number }) {
 }
 
 /**
- * Avatar del participante: cápsula redondeada verde con cara simple, bracitos y pies.
- * Toda la animación ocurre en `useFrame` sobre refs; no hay estado de React por fotograma (AC-14).
+ * Avatar de un participante (propio o ajeno): cápsula redondeada de su color con cara simple, bracitos,
+ * pies y su nombre encima. Toda la animación ocurre en `useFrame` sobre refs; no hay estado de React por
+ * fotograma (spec 002 AC-14).
  */
-export function Avatar({ player }: { player: PlayerState }) {
+export function Avatar({ player, color, name }: { player: AvatarMotion; color: string; name: string }) {
+  const footColor = useMemo(() => shadeColor(color), [color]);
   const root = useRef<Group>(null);
   const body = useRef<Group>(null);
   const shadow = useRef<Mesh>(null);
@@ -66,7 +72,7 @@ export function Avatar({ player }: { player: PlayerState }) {
       <group ref={body} position={[0, 0, 0]}>
         <mesh position={[0, BODY_RADIUS * 1.05, 0]} castShadow>
           <sphereGeometry args={[BODY_RADIUS, 32, 24]} />
-          <meshStandardMaterial color={PALETTE.avatar} roughness={0.35} metalness={0.02} />
+          <meshStandardMaterial color={color} roughness={0.35} metalness={0.02} />
         </mesh>
 
         {/* cara: hija del cuerpo, así gira con él (AC-6) */}
@@ -88,7 +94,7 @@ export function Avatar({ player }: { player: PlayerState }) {
             castShadow
           >
             <sphereGeometry args={[0.1, 16, 12]} />
-            <meshStandardMaterial color={PALETTE.avatar} roughness={0.35} />
+            <meshStandardMaterial color={color} roughness={0.35} />
           </mesh>
         ))}
 
@@ -96,10 +102,13 @@ export function Avatar({ player }: { player: PlayerState }) {
         {[-1, 1].map((side) => (
           <mesh key={side} position={[side * 0.13, 0.055, -0.06]} scale={[1, 0.6, 1.3]} castShadow>
             <sphereGeometry args={[0.075, 16, 12]} />
-            <meshStandardMaterial color={PALETTE.avatarDark} roughness={0.4} />
+            <meshStandardMaterial color={footColor} roughness={0.4} />
           </mesh>
         ))}
       </group>
+
+      {/* fuera del cuerpo: la etiqueta no se deforma con el squash ni sube y baja al respirar */}
+      <NameLabel name={name} />
     </group>
   );
 }

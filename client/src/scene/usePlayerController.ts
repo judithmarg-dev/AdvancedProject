@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { AVATAR, MOVE_SPEED, OBSTACLES, SPAWN, resolveMovement, type Vec2 } from "@office/shared";
+import type { OfficeSession } from "../net/office";
+import { createSendPolicy } from "../net/sendPolicy";
 import { createKeyboardInput } from "./input";
 import { angleFromDirection, stepVelocity, turnToward } from "./movement";
 import { cameraLookAt, desiredCameraPosition, followCamera, type Vec3 } from "./camera";
@@ -22,10 +24,11 @@ export type PlayerState = {
 const MAX_DELTA = 1 / 20;
 
 /**
- * Bucle de movimiento del jugador local: teclado → velocidad → colisiones → cámara.
+ * Bucle de movimiento del jugador local: teclado → velocidad → colisiones → cámara → envío al servidor.
+ * El movimiento se aplica en local sin esperar respuesta (spec 003 AC-12); el servidor solo corrige.
  * Trabaja sobre un objeto mutable (no estado de React) para no renderizar por fotograma.
  */
-export function usePlayerController(): PlayerState {
+export function usePlayerController(session: OfficeSession): PlayerState {
   const player = useMemo<PlayerState>(
     () => ({
       position: { ...SPAWN },
@@ -43,6 +46,19 @@ export function usePlayerController(): PlayerState {
     [],
   );
   useEffect(() => () => input?.dispose(), [input]);
+
+  const sendPolicy = useMemo(() => createSendPolicy({ ...player.position, rotY: player.angle }), [player]);
+
+  // Corrección del servidor: se aplica de inmediato, sin transición (spec 003 AC-13).
+  useEffect(() => {
+    session.onCorrection((correction) => {
+      player.position = { x: correction.x, z: correction.z };
+      player.velocity = { x: 0, z: 0 };
+      player.speed = 0;
+      sendPolicy.reset({ ...player.position, rotY: player.angle });
+    });
+    return () => session.onCorrection(() => {});
+  }, [session, player, sendPolicy]);
 
   const camera = useThree((state) => state.camera);
   const cameraPosition = useRef<Vec3>(desiredCameraPosition(player.position));
@@ -67,6 +83,9 @@ export function usePlayerController(): PlayerState {
     if (direction.x !== 0 || direction.z !== 0) {
       player.angle = turnToward(player.angle, angleFromDirection(direction), dt);
     }
+
+    const move = sendPolicy.update(performance.now(), { ...player.position, rotY: player.angle });
+    if (move) session.sendMove(move);
 
     cameraPosition.current = followCamera(cameraPosition.current, desiredCameraPosition(player.position), dt);
     camera.position.set(cameraPosition.current.x, cameraPosition.current.y, cameraPosition.current.z);
