@@ -95,3 +95,6 @@ Cómo correr: desde la raíz, `npm run dev`. Cliente en `http://localhost:5173`,
 | Varias vistas | Abrir dos pestañas (o un segundo navegador) a la vez. | Ambas se conectan; el servidor registra dos conexiones y dos salidas al cerrarlas. | ✅ | |
 
 Approved by Judith Paco, 2026-10-23
+
+## Modificaciones posteriores
+- 2026-11-04 · Spec 003: AC-3/AC-7 — la conexión se inicia al pulsar «Entrar», no al cargar la página; los mensajes de consola se mantienen. Ver «Impacto en specs existentes» de `specs/003-multiplayer/spec.md`.

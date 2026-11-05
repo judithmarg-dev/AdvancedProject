@@ -47,10 +47,10 @@ AdvancedProject/
 - **Hecho cuando**: caminas por la sala sin atravesar paredes a 60 fps. ✔ (validado a mano el 2026-10-27, spec 002)
 
 ### Fase 2: Multijugador
-- [ ] `OfficeRoom` en Colyseus con schema `Player {id, name, x, z, rotY, color}`.
-- [ ] Cliente envía posición (~10-15 Hz); interpola la de los demás.
-- [ ] Pantalla de entrada con nombre; etiqueta flotante sobre cada avatar.
-- [ ] Alta/baja de jugadores limpia.
+- [x] `OfficeRoom` en Colyseus con schema `Player {id, name, x, z, rotY, color}`.
+- [x] Cliente envía posición (~10-15 Hz); interpola la de los demás.
+- [x] Pantalla de entrada con nombre; etiqueta flotante sobre cada avatar.
+- [x] Alta/baja de jugadores limpia.
 - **Hecho cuando**: dos pestañas se ven moverse entre sí con fluidez.
 
 ### Fase 3: Chat
@@ -82,12 +82,12 @@ Múltiples salas, editor de mapas, auth, persistencia, avatares personalizables,
 - Respuestas breves: no reexplicar decisiones ya cerradas aquí.
 
 ## Estado actual (actualizar al terminar cada sesión)
-- Fecha: 2026-10-27
-- Fase en curso: Fase 1 cerrada (spec 002 `Implemented`); siguiente, Fase 2 (spec 003)
-- Modelo en uso: Opus 5
-- Último logro: spec 002 cerrada (T1–T25): `shared/world.ts` con medidas y colisión AABB, escena R3F (sala con ventanal y mobiliario, avatar cápsula animado, cámara en tercera persona) y aviso de controles. Validación manual aprobada el 2026-10-27 tras corregir el muro sur traslúcido, la rotación del ventanal, la caja de la pared este y el punto de entrada. `npm run build` y `npm test` pasan (69 pruebas).
+- Fecha: 2026-11-04
+- Fase en curso: Fase 2 cerrada (spec 003 `Implemented`); siguiente, Fase 3 (spec 004, chat)
+- Modelo en uso: Opus 5.5
+- Último logro: spec 003 cerrada (T1–T39): sala Colyseus autoritativa (nombre, color, capacidad 20, validación de movimiento con corrección), pantalla de entrada, etiquetas de nombre, interpolación de avatares remotos, textura granulada del avatar y colisiones entre avatares (hueco libre al entrar, margen de red en el servidor). Validación manual aprobada el 2026-11-04. `npm run build` y `npm test` pasan (182 pruebas).
 - Bloqueos: ninguno
-- Siguiente paso concreto: `/sdd-spec` de la spec 003 (Fase 2, multijugador)
+- Siguiente paso concreto: `/sdd-spec` de la spec 004 (Fase 3, chat)
 
 ## Decisiones (agregar al tomar nuevas)
 - 2026-10-17: stack fijado según tabla superior.
@@ -99,6 +99,8 @@ Múltiples salas, editor de mapas, auth, persistencia, avatares personalizables,
 - 2026-10-22 (spec 001): entorno: el proyecto vive en `C:\Users\Judith.Paco\AdvancedProject` y se instala/ejecuta desde una terminal nativa de Windows. No ejecutar `npm install` desde WSL en este árbol: `node` en WSL es un enlace a `node.exe` y se crearían enlaces simbólicos de WSL que Windows no resuelve. Si pasa, borrar `node_modules` y reinstalar desde Windows.
 
 - 2026-10-27 (spec 002): dependencias de la Fase 1 en `client/`: `three` (0.186), `@react-three/fiber` (9.8); dev: `@types/three`. `@react-three/drei` se descartó en la implementación (sin usos: todo sale de primitivas de three); se reevalúa en la Fase 5. `zustand` se difiere a la spec 003 (en la Fase 1 no hay estado compartido entre componentes: el movimiento vive en refs por fotograma). Medidas del mundo y colisión AABB (`shared/world.ts`) se ponen en `shared/` para que el servidor las use como autoridad en la spec 003.
+- 2026-11-02 (spec 003): dependencias de la Fase 2: `@colyseus/schema` ^5 en `shared/` (el schema de la sala es un tipo de red; antes solo llegaba como dependencia par de core/sdk) y `zustand` ^5 en `client/` (estado de la sesión y lista de participantes). Instalar con `npm install` desde Windows.
+- 2026-11-04 (spec 003): los avatares chocan entre sí (cambio pedido en validación). El cliente frena contra la posición interpolada de los demás; el servidor coloca al que entra en el hueco libre más cercano a SPAWN y solo rechaza solapes claros (centros a < 1 radio y acercándose) para que la latencia no cause correcciones. Sin dependencias nuevas.
 
 ## Metodología
 Cada fase se ejecuta como una spec SDD (`specs/NNN-nombre/`) con el flujo de `CLAUDE.md`:

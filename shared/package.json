@@ -6,10 +6,14 @@
   "main": "types.ts",
   "types": "types.ts",
   "exports": {
-    ".": "./types.ts"
+    ".": "./types.ts",
+    "./schema": "./schema.ts"
   },
   "scripts": {
     "build": "tsc --noEmit",
     "test": "vitest run"
+  },
+  "dependencies": {
+    "@colyseus/schema": "^5.0.42"
   }
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { MOVE_SPEED } from "@office/shared";
-import { BREATHING_PERIOD, breathingOffset, squashScale, walkBob } from "./animation";
+import { advanceWalkPhase, BREATHING_PERIOD, breathingOffset, squashScale, walkBob } from "./animation";
 
 describe("respiración en reposo (AC-11)", () => {
   it("es periódica", () => {
@@ -27,10 +27,32 @@ describe("balanceo al caminar (AC-12)", () => {
   });
 
   it("balancea más cuanto más rápido se mueve", () => {
-    const slow = Array.from({ length: 32 }, (_, i) => Math.abs(walkBob(i / 32, MOVE_SPEED / 3)));
-    const fast = Array.from({ length: 32 }, (_, i) => Math.abs(walkBob(i / 32, MOVE_SPEED)));
+    const slow = Array.from({ length: 32 }, (_, i) => Math.abs(walkBob(i / 8, MOVE_SPEED / 3)));
+    const fast = Array.from({ length: 32 }, (_, i) => Math.abs(walkBob(i / 8, MOVE_SPEED)));
 
     expect(Math.max(...fast)).toBeGreaterThan(Math.max(...slow));
+  });
+});
+
+describe("fase del paso (spec 003 AC-9)", () => {
+  it("no avanza con el avatar quieto", () => {
+    expect(advanceWalkPhase(1.3, 0.016, 0)).toBe(1.3);
+  });
+
+  it("avanza más rápido cuanto más rápido anda", () => {
+    expect(advanceWalkPhase(0, 0.016, MOVE_SPEED)).toBeGreaterThan(advanceWalkPhase(0, 0.016, MOVE_SPEED / 2));
+  });
+
+  it("un cambio pequeño de velocidad no hace saltar el balanceo, aunque lleve mucho tiempo andando", () => {
+    // un minuto andando a velocidad máxima
+    let phase = 0;
+    for (let i = 0; i < 3600; i++) phase = advanceWalkPhase(phase, 1 / 60, MOVE_SPEED);
+
+    const before = walkBob(phase, MOVE_SPEED);
+    const nextPhase = advanceWalkPhase(phase, 1 / 60, MOVE_SPEED * 0.9);
+    const after = walkBob(nextPhase, MOVE_SPEED * 0.9);
+
+    expect(Math.abs(after - before)).toBeLessThan(0.01);
   });
 });
 

@@ -17,11 +17,20 @@ export function breathingOffset(time: number): number {
   return Math.sin((time / BREATHING_PERIOD) * Math.PI * 2) * BREATHING_AMPLITUDE;
 }
 
-/** Balanceo al caminar: crece con la velocidad y desaparece al pararse (AC-12). */
-export function walkBob(time: number, speed: number): number {
+/**
+ * Avanza la fase del paso según lo andado en `delta` segundos. Acumular la fase (en vez de calcularla como
+ * tiempo × velocidad) mantiene el balanceo continuo aunque la velocidad varíe (spec 003 AC-9).
+ */
+export function advanceWalkPhase(phase: number, delta: number, speed: number): number {
+  if (speed <= 0) return phase;
+  return phase + delta * WALK_FREQUENCY * Math.PI * Math.min(speed / MOVE_SPEED, 1);
+}
+
+/** Balanceo al caminar en una fase dada: crece con la velocidad y desaparece al pararse (AC-12). */
+export function walkBob(phase: number, speed: number): number {
   if (speed <= 0) return 0;
   const intensity = Math.min(speed / MOVE_SPEED, 1);
-  return Math.abs(Math.sin(time * WALK_FREQUENCY * Math.PI * intensity)) * WALK_AMPLITUDE * intensity;
+  return Math.abs(Math.sin(phase)) * WALK_AMPLITUDE * intensity;
 }
 
 /**

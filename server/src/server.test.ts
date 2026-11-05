@@ -58,13 +58,13 @@ describe("startServer", () => {
   it("permite unirse, detenerse y volver a arrancar (AC-6)", async () => {
     const first = spawnServer(PORT + 1);
     await first.listening;
-    const room = await new ColyseusSDK(`ws://localhost:${PORT + 1}`).joinOrCreate(ROOM_NAME);
+    const room = await new ColyseusSDK(`ws://localhost:${PORT + 1}`).joinOrCreate(ROOM_NAME, { name: "Prueba" });
     expect(room.sessionId).toBeTruthy();
     await kill(first.child);
 
     const second = spawnServer(PORT + 1);
     await second.listening;
-    const again = await new ColyseusSDK(`ws://localhost:${PORT + 1}`).joinOrCreate(ROOM_NAME);
+    const again = await new ColyseusSDK(`ws://localhost:${PORT + 1}`).joinOrCreate(ROOM_NAME, { name: "Prueba" });
     expect(again.sessionId).toBeTruthy();
   }, 40000);
 
