@@ -145,3 +145,6 @@ Tareas abiertas a raíz de esta validación: T21 (AC-2) y T22 (AC-13). La spec s
 | AC-18 | Servidor parado | Escena cargable y recorrible, consola informa del fallo | ✅ | |
 
 Approved by Judith Paco, 2026-10-27.
+
+## Modificaciones posteriores
+- 2026-11-04 · Spec 003: AC-2 (el avatar aparece al entrar con nombre, no al abrir), AC-13 (el color lo asigna el servidor de una paleta pastel), AC-17 (el aviso de controles se muestra al entrar a la sala) y AC-18 (sin servidor no se entra en modo local; sustituido por spec 003 AC-17). Ver «Impacto en specs existentes» de `specs/003-multiplayer/spec.md`.

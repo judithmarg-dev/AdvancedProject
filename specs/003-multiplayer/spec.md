@@ -1,6 +1,6 @@
 # 003 · Multijugador: presencia y movimiento compartidos
 
-- **Estado:** In progress
+- **Estado:** Implemented
 - **Fase del plan:** 2
 - **Fecha:** 2026-11-02
 
@@ -48,6 +48,11 @@ proximidad (spec 005).
 - **AC-18** Dado un participante en la sala, cuando el servidor se detiene, entonces los avatares de los demás desaparecen y vuelve a la pantalla de entrada con un aviso de que se perdió la conexión, con su nombre conservado y la opción de reintentar como en AC-17; la página no se rompe.
 - **AC-19** Dada la sala llena (ver reglas), cuando un visitante más intenta entrar, entonces ve un aviso de que la sala está completa y los participantes presentes no se ven afectados.
 - **AC-20** Dados dos visitantes que entran casi a la vez, cuando ambos terminan de entrar, entonces cada uno ve al otro exactamente una vez y con colores distintos.
+- **AC-21** Dado cualquier avatar en la sala (propio o ajeno), cuando se observa, entonces su superficie tiene una textura granulada sutil que conserva su color; el resto de la sala no cambia de aspecto.
+- **AC-22** Dados dos participantes A y B en la sala, cuando A camina hacia B, entonces A se detiene al tocarlo o lo rodea deslizándose (como con los muebles) y no lo atraviesa; vale igual para B y para cualquier pareja, y en uso normal no hay saltos atrás.
+- **AC-23** Dados dos avatares que se solapan, cuando uno de ellos se mueve, entonces puede separarse libremente y no se acerca más; ningún avatar queda atrapado.
+- **AC-24** Dado el punto de entrada ocupado por otro avatar, cuando un participante entra, entonces aparece en el hueco libre más cercano al punto de entrada (sin solaparse con nadie ni con muebles); si el punto está libre, aparece en él (matiza AC-4 y AC-16).
+- **AC-25** Dada una posición recibida que se mete claramente dentro de otro avatar (más allá del margen de red, ver reglas) acercándose a él, cuando el servidor la procesa, entonces la rechaza como en AC-13.
 
 ## Reglas de negocio
 - El servidor es la autoridad: asigna identificador, color y posición inicial; los clientes solo envían su posición y orientación deseadas, que el servidor valida con las mismas medidas y colisiones de la sala de la spec 002.
@@ -61,13 +66,13 @@ proximidad (spec 005).
 - Pantalla de entrada: la sala se ve de fondo, atenuada, sin avatares ni movimiento del visitante; si el servidor no responde, el visitante se queda en ella, y si la conexión se pierde estando dentro, vuelve a ella.
 - Corrección de posición rechazada: inmediata, sin transición.
 - Llegadas y salidas de otros participantes: solo se registran en la consola del navegador, sin aviso en pantalla.
-- Todos entran por el punto de entrada de la spec 002; los avatares no chocan entre sí.
+- Todos entran por el punto de entrada de la spec 002 o, si está ocupado, por el hueco libre más cercano.
+- Los avatares chocan entre sí con el mismo radio que usan contra los muebles. El cliente frena contra la posición que ve de los demás; el servidor solo rechaza solapes claros (centros a menos de un radio de avatar) que acercan a los dos avatares, para que el retraso de red no provoque saltos atrás.
 - Salida: cerrar, recargar o perder la conexión equivale a salir; no hay reconexión automática ni recuperación de la sesión.
 - Idioma de los textos de la UI y de los mensajes de consola: español.
 
 ## Fuera de alcance
 - Chat y burbujas de texto (spec 004); audio y video (spec 005).
-- Colisiones entre avatares.
 - Reconexión automática y conservación de la posición tras salir.
 - Autenticación, nombres únicos o persistencia del nombre entre visitas.
 - Elección de color o personalización del avatar por parte del participante.
@@ -94,15 +99,46 @@ proximidad (spec 005).
 - 2026-11-02 · ¿La sala se ve detrás de la pantalla de entrada? → Sí, de fondo y atenuada, sin avatar ni movimiento. Reflejado en AC-1 y reglas.
 - 2026-11-02 · ¿El participante ve su propio nombre sobre su avatar? → Sí, todos los avatares llevan etiqueta. Reflejado en AC-4 y AC-7.
 - 2026-11-02 · ¿Aviso en pantalla cuando alguien llega o se va? → No, solo registro en la consola del navegador. Reflejado en AC-5, AC-15, reglas y fuera de alcance.
+- 2026-11-03 · Cambio pedido en la validación manual: avatares con textura granulada (solo el avatar, sin dependencias nuevas). Reflejado en AC-21.
+- 2026-11-04 · Cambio pedido: los avatares deben chocar entre sí. Reflejado en AC-22–AC-25, reglas y fuera de alcance.
+- 2026-11-04 · ¿Punto de entrada ocupado? → Hueco libre más cercano, asignado por el servidor. Reflejado en AC-24.
+- 2026-11-04 · ¿Quién impide atravesar a otro avatar? → El cliente frena en local; el servidor tolera un margen y solo rechaza solapes claros. Reflejado en AC-22, AC-25 y reglas.
 - 2026-11-02 · ¿Si el servidor cae con el participante ya dentro? → Vuelve a la pantalla de entrada con aviso de conexión perdida y reintento (coherente con «sin modo local»). Reflejado en AC-18.
 
 ## Trazabilidad
 | AC | Prueba (archivo / método) o razón de no automatizar |
 |---|---|
+| AC-1 | `client/src/store/session.test.ts` › empieza en la pantalla de entrada, sin conexión ni participantes. Sala atenuada y ausencia de conexión al cargar: Manual (`sdd-validate-impl`, aprobada 2026-11-04). |
+| AC-2 | `shared/players.test.ts` › rechaza el nombre vacío o formado solo por espacios; `server/src/rooms/OfficeRoom.test.ts` › rechaza el nombre vacío, solo de espacios o ausente; `client/src/net/office.test.ts` › traduce el rechazo del servidor a un aviso. Aviso en pantalla: Manual (`sdd-validate-impl`, aprobada 2026-11-04). |
+| AC-3 | `shared/players.test.ts` › admite hasta 20 caracteres…, descarta los espacios…, cuenta caracteres…; `OfficeRoom.test.ts` › guarda el nombre sin los espacios…, rechaza nombres de más de 20 caracteres. Límite del campo: Manual (`sdd-validate-impl`, aprobada 2026-11-04). |
+| AC-4 | `OfficeRoom.test.ts` › crea al participante en el punto de entrada con su nombre y un color; `session.test.ts` › al entrar pasa a la sala…; `office.test.ts` › se une a la sala compartida… Avatar y etiqueta en la escena: Manual (`sdd-validate-impl`, aprobada 2026-11-04). |
+| AC-5 | `OfficeRoom.test.ts` › quien entra después recibe a los presentes…, quien ya estaba recibe al que llega; `office.test.ts` › da de alta a los demás…; `session.test.ts` › registra altas y bajas… |
+| AC-6 | `shared/players.test.ts` › elige el primer color libre, no repite…, hay al menos un color por plaza; `OfficeRoom.test.ts` › asigna colores distintos…, el color de quien sale queda libre… |
+| AC-7 | Manual (`sdd-validate-impl`, aprobada 2026-11-04): etiquetas (sprites) en la escena 3D, no automatizable (`CLAUDE.md` > Pruebas). |
+| AC-8 | `OfficeRoom.test.ts` › admite dos participantes con el mismo nombre como avatares distintos. |
+| AC-9 | `client/src/net/interpolation.test.ts` › dibuja con el retraso…, avanza sin saltos…, gira por el camino corto…; `remoteMotion.test.ts`; `animation.test.ts` › fase del paso; `office.test.ts` › pasa cada cambio de posición… Fluidez percibida: Manual (`sdd-validate-impl`, aprobada 2026-11-04) (2.ª ronda). |
+| AC-10 | `client/src/net/sendPolicy.test.ts` › envía entre 10 y 15 veces por segundo…, no envía nada mientras está quieto, al pararse envía la posición final…; `office.test.ts` › envía la posición propia… |
+| AC-11 | `interpolation.test.ts` › no extrapola…; `animation.test.ts` › respiración en reposo. Aspecto: Manual (`sdd-validate-impl`, aprobada 2026-11-04). |
+| AC-12 | Manual (`sdd-validate-impl`, aprobada 2026-11-04): bucle de fotogramas (`usePlayerController`) sin red de por medio; su lógica pura está cubierta por los tests de la spec 002. |
+| AC-13 | `shared/movementRules.test.ts` › rechaza posiciones fuera de la sala, meterse en un mueble, atravesar una pared, cruzar un mueble, desplazamientos demasiado rápidos, tope de tiempo; `OfficeRoom.test.ts` › rechaza un movimiento %s…, tras un rechazo sigue validando…; `office.test.ts` › entrega las correcciones…; `sendPolicy.test.ts` › tras una corrección… |
+| AC-14 | `movementRules.test.ts` › rechaza campos que faltan, tipos incorrectos, valores no numéricos; `OfficeRoom.test.ts` › descarta un mensaje mal formado (%s), lo registra y la sala sigue. |
+| AC-15 | `OfficeRoom.test.ts` › al salir desaparece para los demás…, una salida sin consentimiento…; `office.test.ts` › da de baja a quien sale…; `session.test.ts` › registra altas y bajas… Tiempo < 2 s en navegador: Manual (`sdd-validate-impl`, aprobada 2026-11-04). |
+| AC-16 | `OfficeRoom.test.ts` › al salir y volver aparece una sola vez…; `session.test.ts` › dar de alta dos veces… no lo duplica. |
+| AC-17 | `session.test.ts` › si no puede entrar vuelve a la pantalla de entrada…; `office.test.ts` › traduce el rechazo… Reintento sin recargar: Manual (`sdd-validate-impl`, aprobada 2026-11-04). |
+| AC-18 | `session.test.ts` › al perder la conexión vuelve a la entrada…; `office.test.ts` (`onLeave` → `connectionLost`). Con servidor real: Manual (`sdd-validate-impl`, aprobada 2026-11-04). |
+| AC-19 | `OfficeRoom.test.ts` › rechaza al 21.º participante…, no supera la capacidad aunque varios entren a la vez; `session.test.ts` / `office.test.ts` (aviso «sala completa»). |
+| AC-20 | `OfficeRoom.test.ts` › dos entradas casi simultáneas… |
+| AC-21 | `client/src/scene/grain.test.ts` › grano del avatar. Aspecto en la escena: Manual (`sdd-validate-impl`, aprobada 2026-11-04). |
+| AC-22 | `shared/avatarCollision.test.ts` › se detiene al contacto…, no atraviesa… con un paso largo, se desliza alrededor…, entre dos avatares no se mete en ninguno; `moveAvatar` (no queda dentro de un mueble); `client/src/net/remotePlayers.test.ts` › devuelve la posición que se ve… Sensación de choque: Manual (`sdd-validate-impl`, aprobada 2026-11-04). |
+| AC-23 | `avatarCollision.test.ts` › si ya se solapan, puede alejarse / no se acerca más, en la misma posición exacta…, no rechaza alejarse…; `OfficeRoom.test.ts` › acepta alejarse de otro avatar aunque sigan solapados. |
+| AC-24 | `avatarCollision.test.ts` › usa el punto de entrada si está libre, si está ocupado elige un hueco libre…, el hueco elegido es el más cercano; `OfficeRoom.test.ts` › con el punto de entrada ocupado…; `office.test.ts` › se une… (`spawn`). |
+| AC-25 | `avatarCollision.test.ts` › tolera solapes pequeños…, detecta un solape claro…, detecta atravesar…; `OfficeRoom.test.ts` › rechaza meterse claramente dentro de otro avatar. |
 
 ## Validation log
 
 2026-11-02 · Validación manual requerida (cambio visible en servidor, cliente y red). Pendiente de respuesta del desarrollador.
+
+2026-11-03 · Resultado: cambios pedidos. AC-9 ❌ (el desplazamiento es fluido, pero el avatar remoto «salta» mucho al andar) y nuevo AC-21 (textura granulada del avatar). Vuelve a `sdd-implement` con T28–T32.
 
 Cómo correr: desde la raíz (terminal de Windows), `npm run dev`. Cliente en `http://localhost:5173`, servidor en `2567`. Pestaña A y pestaña B = la misma URL en dos pestañas (para AC-6/AC-19 basta con abrir varias; para la vista cruzada, ponerlas lado a lado).
 
@@ -130,3 +166,20 @@ Cómo correr: desde la raíz (terminal de Windows), `npm run dev`. Cliente en `h
 | AC-20 | Pulsar «Entrar» en A y B casi a la vez. | Cada uno ve al otro una vez y con colores distintos. | ✅ | |
 | Efectos laterales | Recorrer la sala con 2 pestañas durante un minuto: paredes, muebles, cámara, respiración y squash (spec 002); contador de fps. | Todo como en la spec 002; ~60 fps. | ✅ | |
 | Varias vistas | Redimensionar una ventana; probar en un segundo navegador. | Escena y panel se ajustan; mismo comportamiento. | ✅ | |
+
+2026-11-03 · Segunda ronda tras T28–T33; 2026-11-04 · ampliada con T34–T39 (colisiones entre avatares):
+
+| Ref | Escenario (pasos) | Resultado esperado | Resultado (✅/❌/n.a.) | Notas |
+|---|---|---|---|---|
+| AC-9 | Mover A por la sala (rectas, giros, diagonales, arrancar y parar) mirando en B. | B lo ve desplazarse con fluidez y su balanceo al andar es regular, como el propio en A; sin saltos ni temblores del cuerpo. | ✅ | |
+| AC-11 | Dejar A quieto y mirar en B. | Respira en reposo, sin derivar ni oscilar. | ✅  | |
+| AC-21 | Acercar la cámara a un avatar propio y a uno ajeno; mirar suelo, paredes y muebles. | Superficie de cuerpo, brazos y pies con grano sutil que capta la luz; colores reconocibles; sin centelleo de lejos; la sala igual que antes. | ✅  | |
+| AC-22 | Con A y B dentro, caminar con A contra B de frente y luego en diagonal; repetir con B contra A y con los dos a la vez. | A se para al tocar a B o lo rodea deslizándose; nunca lo atraviesa; sin saltos atrás en uso normal. | ✅ | |
+| AC-23 | Entrar con A y B casi a la vez (AC-20) y mover uno de ellos. | Si quedaran solapados, se separan sin quedarse atascados. | ✅ | |
+| AC-24 | Con A quieto en el punto de entrada, entrar con B (y con C). | B (y C) aparecen al lado, sin solaparse con A ni con los muebles. | ✅ | |
+| AC-25 | Cubierto por integración (`OfficeRoom.test.ts`); en uso normal no debe verse ninguna corrección al chocar. | Sin saltos atrás al empujar contra otro avatar. | ✅ | |
+| Efectos laterales | Con 2–3 pestañas, recorrer la sala rozando paredes, muebles y otros avatares durante un minuto. | Paredes y muebles como en la spec 002; cámara, respiración y balanceo sin cambios; ~60 fps. | ✅ | |
+| Errores | Con A y B pegados, cerrar la pestaña B y caminar con A por donde estaba B; luego parar el servidor y volver a entrar. | A pasa sin chocar con un «fantasma»; al volver, entra en el punto de entrada (o hueco libre) sin quedar bloqueado. | ✅ | |
+| Varias vistas | Repetir AC-22 con una pestaña en otro navegador y ventanas de distinto tamaño. | Mismo comportamiento en ambas. | ✅ | |
+
+Approved by Judith Paco, 2026-11-04 (segunda ronda: AC-9, AC-11, AC-21–AC-25, efectos laterales, errores y varias vistas ✅).

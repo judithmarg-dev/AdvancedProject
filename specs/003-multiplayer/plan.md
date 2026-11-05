@@ -78,6 +78,23 @@ de la pantalla de entrada) se aísla en funciones puras con test; la sala se pru
 - `src/main.tsx`: deja de conectar al cargar; la conexión la inicia la pantalla de entrada.
 - `src/scene/palette.ts`: `avatar`/`avatarDark` dejan de usarse para el cuerpo (el color viene del servidor).
 
+### Cambios de la validación manual (2026-11-03)
+- **AC-9 (salto al andar):** el balanceo usaba `sin(tiempo × velocidad)`; en los remotos la velocidad estimada oscila (las instantáneas llegan cada 50 o 100 ms por los parches a 20 Hz) y la fase salta. Se pasa a una fase acumulada por distancia (`advanceWalkPhase`) y a un estimador de movimiento remoto suavizado (`remoteMotion.ts`), sin tocar la red.
+- **AC-21 (grano):** textura de ruido en escala de grises generada en código (`DataTexture`, sin dependencias) usada como `map` y `roughnessMap` en los materiales del avatar.
+
+## Cambio 2026-11-04 · Colisiones entre avatares (AC-22–AC-25, T34–T39)
+- **shared:** `shared/avatarCollision.ts` (reexportado): `AVATAR_GAP` (2 radios), `AVATAR_OVERLAP_TOLERANCE`
+  (1 radio), `separateFromAvatars` (para al contacto y desliza; si ya se solapan, no se acercan más),
+  `moveAvatar` (`resolveMovement` + avatares, recortando otra vez contra los muebles), `findSpawn` (SPAWN o el
+  hueco libre más cercano de una rejilla de 0,25 m) y `overlapsAvatar` (distancia mínima del trazado < margen
+  y acercándose).
+- **server:** `OfficeRoom.onJoin` coloca con `findSpawn`; `handleMove` rechaza también con `overlapsAvatar`
+  (misma corrección que AC-13).
+- **client:** `joined` lleva `spawn` (posición que da el servidor) y el avatar propio empieza ahí;
+  `usePlayerController` usa `moveAvatar` contra `remotePlayers.positions(now)` (lo que se ve en pantalla).
+- **Constitución:** II se mantiene (el servidor coloca y valida; el cliente solo predice); III, funciones y
+  constantes en `shared/`, sin tipos de red nuevos; V, sin dependencias nuevas.
+
 ## Contratos de red
 | Mensaje / endpoint | Dirección | Payload (tipo en `shared/`) | Respuestas / errores |
 |---|---|---|---|
@@ -140,7 +157,7 @@ de la pantalla de entrada) se aísla en funciones puras con test; la sala se pru
 | AC-6 | unit + integración | `shared/players.test.ts` (`pickColor` no repite, 20 colores); `OfficeRoom.test.ts` (colores distintos entre presentes, reutiliza el de quien sale). |
 | AC-7 | manual | Sprite de frente a la cámara: visual, no automatizable sin navegador. |
 | AC-8 | integración | `OfficeRoom.test.ts` (dos clientes con el mismo nombre → dos jugadores distintos). |
-| AC-9 | unit + manual | `client/src/net/interpolation.test.ts` (interpola entre instantáneas, giro corto, sin saltos); fluidez en dos pestañas. |
+| AC-9 | unit + manual | `client/src/net/interpolation.test.ts` (interpola entre instantáneas, giro corto, sin saltos); `remoteMotion.test.ts`, `animation.test.ts` (fase continua); fluidez en dos pestañas. |
 | AC-10 | unit + manual | `client/src/net/sendPolicy.test.ts` (≤ 12 Hz, nada quieto, último envío al parar); pestaña Red/WS de DevTools. |
 | AC-11 | unit + manual | `interpolation.test.ts` (sin datos nuevos se queda quieto, no deriva); respiración en validación. |
 | AC-12 | manual | El movimiento local no espera al servidor (mismo bucle de la spec 002); percepción en validación. |
@@ -152,3 +169,4 @@ de la pantalla de entrada) se aísla en funciones puras con test; la sala se pru
 | AC-18 | unit + manual | `office.test.ts` (`onLeave` → `connectionLost`); `session.test.ts` (vacía `remotes`, vuelve a `entry` con aviso); parar el servidor con la sala abierta. |
 | AC-19 | integración + unit | `OfficeRoom.test.ts` (el 21.º recibe `roomFull`, los 20 siguen); `office.test.ts` (traducción del error). |
 | AC-20 | integración | `OfficeRoom.test.ts` (dos `connectTo` en paralelo → dos jugadores, colores distintos, cada uno ve al otro una vez). |
+| AC-21 | unit + manual | `client/src/scene/grain.test.ts` (ruido determinista, claro y variado); aspecto granulado solo en avatares, a ojo en la validación manual. |
