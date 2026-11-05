@@ -1,3 +1,4 @@
+import type { Vec2 } from "@office/shared";
 import { createSnapshotBuffer, type PlayerPose, type SnapshotBuffer } from "./interpolation";
 
 export type { PlayerPose };
@@ -19,6 +20,15 @@ export function createRemotePlayers() {
     },
     sample(id: string, now: number): PlayerPose | null {
       return buffers.get(id)?.sample(now) ?? null;
+    },
+    /** Dónde se ve ahora a cada participante: el avatar propio choca contra esto (spec 003 AC-22). */
+    positions(now: number): Vec2[] {
+      const result: Vec2[] = [];
+      for (const buffer of buffers.values()) {
+        const pose = buffer.sample(now);
+        if (pose) result.push({ x: pose.x, z: pose.z });
+      }
+      return result;
     },
   };
 }

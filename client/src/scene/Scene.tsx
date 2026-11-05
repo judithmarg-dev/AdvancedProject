@@ -1,16 +1,16 @@
 import { Canvas } from "@react-three/fiber";
 import { CAMERA_OFFSET, SPAWN } from "@office/shared";
 import type { OfficeSession } from "../net/office";
-import { useSession, type RemoteInfo } from "../store/session";
+import { useSession, type SelfInfo } from "../store/session";
 import { Avatar } from "./Avatar";
 import { Lighting } from "./Lighting";
 import { RemoteAvatar } from "./RemoteAvatar";
 import { Room } from "./Room";
 import { usePlayerController } from "./usePlayerController";
 
-/** Avatar propio: solo existe dentro de la sala, así que cada entrada empieza en el punto de entrada. */
-function LocalPlayer({ session, self }: { session: OfficeSession; self: RemoteInfo }) {
-  const player = usePlayerController(session);
+/** Avatar propio: solo existe dentro de la sala; cada entrada empieza donde lo coloca el servidor (AC-24). */
+function LocalPlayer({ session, self }: { session: OfficeSession; self: SelfInfo }) {
+  const player = usePlayerController(session, self.spawn);
   return <Avatar player={player} name={self.name} color={self.color} />;
 }
 

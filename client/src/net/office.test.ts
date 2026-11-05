@@ -53,11 +53,12 @@ describe("joinOffice", () => {
     const { deps, sink, joinOrCreate, events } = setup(async () => room);
 
     const session = await joinOffice(URL, "Ana", deps, sink);
-    events().onAdd(player("abc123", { name: "Ana", color: "#F4B6A6" }));
+    events().onAdd(player("abc123", { name: "Ana", color: "#F4B6A6", x: -1.25, z: 4.5 }));
 
     expect(deps.createClient).toHaveBeenCalledWith(URL);
     expect(joinOrCreate).toHaveBeenCalledWith(ROOM_NAME, { name: "Ana" });
-    expect(sink.joined).toHaveBeenCalledWith("abc123", { name: "Ana", color: "#F4B6A6" });
+    // El avatar propio empieza donde lo colocó el servidor (spec 003 AC-24).
+    expect(sink.joined).toHaveBeenCalledWith("abc123", { name: "Ana", color: "#F4B6A6", spawn: { x: -1.25, z: 4.5 } });
     expect(session?.sessionId).toBe("abc123");
     expect(deps.log).toHaveBeenCalledWith(expect.stringContaining("abc123"));
   });

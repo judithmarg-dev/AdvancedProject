@@ -9,7 +9,7 @@ import {
   type PlayerData,
 } from "@office/shared";
 import type { OfficeState } from "@office/shared/schema";
-import { sessionStore, type RemoteInfo } from "../store/session";
+import { sessionStore, type RemoteInfo, type SelfInfo } from "../store/session";
 import { remotePlayers, type PlayerPose } from "./remotePlayers";
 
 /** Lo que este módulo usa de una sala del SDK; permite probarlo sin servidor. */
@@ -38,7 +38,7 @@ export interface OfficeDeps<R extends JoinedRoom = JoinedRoom> {
 /** A dónde van los eventos de la sala: el store (lo que React pinta) y el registro de posiciones. */
 export interface OfficeSink {
   /** Se llama cuando el propio participante aparece en el estado, ya con el color asignado. */
-  joined(selfId: string, self: RemoteInfo): void;
+  joined(selfId: string, self: SelfInfo): void;
   joinFailed(message: string): void;
   connectionLost(): void;
   playerAdded(id: string, info: RemoteInfo): void;
@@ -101,7 +101,7 @@ export async function joinOffice<R extends JoinedRoom>(
   deps.observePlayers(room, {
     onAdd(player) {
       if (player.id === selfId) {
-        sink.joined(selfId, { name: player.name, color: player.color });
+        sink.joined(selfId, { name: player.name, color: player.color, spawn: { x: player.x, z: player.z } });
         return;
       }
       names.set(player.id, player.name);

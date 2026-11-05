@@ -1,10 +1,14 @@
 import { createStore, useStore } from "zustand";
+import type { Vec2 } from "@office/shared";
 
 /** Pantalla de entrada → conectando → dentro de la sala. Sin servidor no se sale de la entrada (spec 003). */
 export type SessionPhase = "entry" | "connecting" | "inRoom";
 
 /** Lo que React necesita de otro participante; su posición vive fuera de React (`net/remotePlayers.ts`). */
 export type RemoteInfo = { name: string; color: string };
+
+/** Lo propio: además, dónde lo colocó el servidor al entrar (spec 003 AC-24). */
+export type SelfInfo = RemoteInfo & { spawn: Vec2 };
 
 export const CONNECTION_LOST_MESSAGE = "Se perdió la conexión con el servidor";
 
@@ -15,10 +19,10 @@ export interface SessionState {
   error: string | null;
   selfId: string | null;
   /** Nombre y color propios tal como los fijó el servidor. */
-  self: RemoteInfo | null;
+  self: SelfInfo | null;
   remotes: Record<string, RemoteInfo>;
   startJoin(name: string): void;
-  joined(selfId: string, self: RemoteInfo): void;
+  joined(selfId: string, self: SelfInfo): void;
   joinFailed(message: string): void;
   connectionLost(): void;
   playerAdded(id: string, info: RemoteInfo): void;

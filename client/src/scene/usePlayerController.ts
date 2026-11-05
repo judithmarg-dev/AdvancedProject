@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
-import { AVATAR, MOVE_SPEED, OBSTACLES, SPAWN, resolveMovement, type Vec2 } from "@office/shared";
+import { MOVE_SPEED, moveAvatar, type Vec2 } from "@office/shared";
+import { remotePlayers } from "../net/remotePlayers";
 import type { OfficeSession } from "../net/office";
 import { createSendPolicy } from "../net/sendPolicy";
 import { createKeyboardInput } from "./input";
@@ -24,20 +25,22 @@ export type PlayerState = {
 const MAX_DELTA = 1 / 20;
 
 /**
- * Bucle de movimiento del jugador local: teclado → velocidad → colisiones → cámara → envío al servidor.
+ * Bucle de movimiento del jugador local: teclado → velocidad → colisiones (muebles y demás avatares, tal
+ * como se ven en pantalla, spec 003 AC-22) → cámara → envío al servidor.
  * El movimiento se aplica en local sin esperar respuesta (spec 003 AC-12); el servidor solo corrige.
  * Trabaja sobre un objeto mutable (no estado de React) para no renderizar por fotograma.
  */
-export function usePlayerController(session: OfficeSession): PlayerState {
+export function usePlayerController(session: OfficeSession, spawn: Vec2): PlayerState {
   const player = useMemo<PlayerState>(
     () => ({
-      position: { ...SPAWN },
+      position: { ...spawn },
       velocity: { x: 0, z: 0 },
       angle: 0,
       speed: 0,
       acceleration: 0,
       elapsed: 0,
     }),
+    // La posición inicial solo cuenta al montar: luego manda el bucle.
     [],
   );
 
@@ -73,11 +76,10 @@ export function usePlayerController(session: OfficeSession): PlayerState {
     player.speed = Math.hypot(player.velocity.x, player.velocity.z);
     player.acceleration = dt > 0 ? (player.speed - previousSpeed) / dt : 0;
 
-    player.position = resolveMovement(
+    player.position = moveAvatar(
       player.position,
       { x: player.velocity.x * dt, z: player.velocity.z * dt },
-      AVATAR.radius,
-      OBSTACLES,
+      remotePlayers.positions(performance.now()),
     );
 
     if (direction.x !== 0 || direction.z !== 0) {

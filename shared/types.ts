@@ -34,3 +34,4 @@ export interface PlayerData {
 export * from "./world";
 export * from "./players";
 export * from "./movementRules";
+export * from "./avatarCollision";

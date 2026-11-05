@@ -19,8 +19,8 @@ describe("sesión del participante", () => {
 
   it("al entrar pasa a la sala con su identificador, nombre y color asignado (AC-4)", () => {
     store.getState().startJoin("Ana");
-    store.getState().joined("s1", { name: "Ana", color: "#F4B6A6" });
-    expect(store.getState()).toMatchObject({ phase: "inRoom", selfId: "s1", self: { name: "Ana", color: "#F4B6A6" } });
+    store.getState().joined("s1", { name: "Ana", color: "#F4B6A6", spawn: { x: -2, z: 4.5 } });
+    expect(store.getState()).toMatchObject({ phase: "inRoom", selfId: "s1", self: { name: "Ana", color: "#F4B6A6", spawn: { x: -2, z: 4.5 } } });
   });
 
   it("si no puede entrar vuelve a la pantalla de entrada con aviso y conserva el nombre (AC-17, AC-19)", () => {
@@ -31,7 +31,7 @@ describe("sesión del participante", () => {
 
   it("al perder la conexión vuelve a la entrada, conserva el nombre y vacía la sala (AC-18)", () => {
     store.getState().startJoin("Ana");
-    store.getState().joined("s1", { name: "Ana", color: "#F4B6A6" });
+    store.getState().joined("s1", { name: "Ana", color: "#F4B6A6", spawn: { x: -2, z: 4.5 } });
     store.getState().playerAdded("s2", { name: "Bea", color: "#A9CBE8" });
 
     store.getState().connectionLost();

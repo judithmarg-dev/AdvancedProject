@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { boot, type ColyseusTestServer } from "@colyseus/testing";
-import { JOIN_ERROR, MAX_PLAYERS, MSG, ROOM_NAME, SPAWN, type CorrectionMessage } from "@office/shared";
+import { AVATAR_GAP, JOIN_ERROR, MAX_PLAYERS, MSG, ROOM_NAME, SPAWN, type CorrectionMessage } from "@office/shared";
 import type { OfficeState } from "@office/shared/schema";
 import { createGameServer } from "../server";
 import type { OfficeRoom } from "./OfficeRoom";
@@ -217,11 +217,64 @@ describe("OfficeRoom", () => {
         await vi.waitFor(() => expect(warn).toHaveBeenCalledWith(expect.stringContaining("mal formado")));
         expect(players(room).get(mover.sessionId)).toMatchObject({ x: SPAWN.x, z: SPAWN.z });
 
-        watcher.send(MSG.move, { x: SPAWN.x - 0.2, z: SPAWN.z, rotY: 0 });
-        await vi.waitFor(() => expect(players(room).get(watcher.sessionId)?.x).toBeCloseTo(SPAWN.x - 0.2));
+        const start = players(room).get(watcher.sessionId)!;
+        const target = { x: start.x - 0.2, z: start.z };
+        watcher.send(MSG.move, { ...target, rotY: 0 });
+        await vi.waitFor(() => expect(players(room).get(watcher.sessionId)?.x).toBeCloseTo(target.x));
         expect(players(room).size).toBe(2);
       },
     );
+  });
+
+  describe("colisiones entre avatares", () => {
+    const gap = (a: { x: number; z: number }, b: { x: number; z: number }) => Math.hypot(a.x - b.x, a.z - b.z);
+
+    it("con el punto de entrada ocupado, el siguiente aparece en un hueco libre cercano (AC-24)", async () => {
+      const room = await createRoom();
+      const a = await colyseus.connectTo(room, { name: "Ana" });
+      const b = await colyseus.connectTo(room, { name: "Bea" });
+
+      const pa = players(room).get(a.sessionId)!;
+      const pb = players(room).get(b.sessionId)!;
+      expect(pa).toMatchObject({ x: SPAWN.x, z: SPAWN.z });
+      expect(gap(pa, pb)).toBeGreaterThanOrEqual(AVATAR_GAP);
+      expect(gap(pb, SPAWN)).toBeLessThan(AVATAR_GAP + 0.3);
+    });
+
+    /** `mover` en SPAWN avanza hacia `other` en pasos cortos (siempre dentro de la velocidad permitida). */
+    async function approach() {
+      const room = await createRoom();
+      const mover = await colyseus.connectTo(room, { name: "Ana" });
+      const other = await colyseus.connectTo(room, { name: "Bea" });
+      const target = players(room).get(other.sessionId)!;
+      const d = gap(SPAWN, target);
+      const step = (k: number) => ({ x: SPAWN.x + ((target.x - SPAWN.x) / d) * k, z: SPAWN.z + ((target.z - SPAWN.z) / d) * k });
+      return { room, mover, target: { x: target.x, z: target.z }, step };
+    }
+
+    it("rechaza meterse claramente dentro de otro avatar (AC-25)", async () => {
+      const { room, mover, step } = await approach();
+      const first = step(0.25);
+      mover.send(MSG.move, { ...first, rotY: 0 });
+      await vi.waitFor(() => expect(players(room).get(mover.sessionId)?.x).toBeCloseTo(first.x));
+
+      const correction = mover.waitForMessage(MSG.correction);
+      mover.send(MSG.move, { ...step(0.5), rotY: 0 });
+      const back = (await correction) as CorrectionMessage;
+      expect(back.x).toBeCloseTo(first.x);
+      expect(back.z).toBeCloseTo(first.z);
+    });
+
+    it("acepta alejarse de otro avatar aunque sigan solapados (AC-23)", async () => {
+      const { room, mover, step } = await approach();
+      const near = step(0.25);
+      mover.send(MSG.move, { ...near, rotY: 0 });
+      await vi.waitFor(() => expect(players(room).get(mover.sessionId)?.x).toBeCloseTo(near.x));
+
+      const away = step(0.1);
+      mover.send(MSG.move, { ...away, rotY: 0 });
+      await vi.waitFor(() => expect(players(room).get(mover.sessionId)?.x).toBeCloseTo(away.x));
+    });
   });
 
   describe("salida", () => {
@@ -251,8 +304,8 @@ describe("OfficeRoom", () => {
 
     it("al salir y volver aparece una sola vez, en el punto de entrada (AC-16)", async () => {
       const room = await createRoom();
-      const stay = await colyseus.connectTo(room, { name: "Bea" });
       const first = await colyseus.connectTo(room, { name: "Ana" });
+      const stay = await colyseus.connectTo(room, { name: "Bea" });
       first.send(MSG.move, { x: SPAWN.x + 0.2, z: SPAWN.z, rotY: 0 });
       await vi.waitFor(() => expect(players(room).get(first.sessionId)?.x).toBeCloseTo(SPAWN.x + 0.2));
       await first.leave();
