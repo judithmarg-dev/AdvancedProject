@@ -3,12 +3,16 @@ import {
   JOIN_ERROR,
   MSG,
   ROOM_NAME,
+  type ChatMessage,
+  type ChatSend,
+  type ChatNotice,
   type CorrectionMessage,
   type JoinOptions,
   type MoveMessage,
   type PlayerData,
 } from "@office/shared";
 import type { OfficeState } from "@office/shared/schema";
+import { chatStore } from "../store/chat";
 import { sessionStore, type RemoteInfo, type SelfInfo } from "../store/session";
 import { remotePlayers, type PlayerPose } from "./remotePlayers";
 
@@ -45,11 +49,18 @@ export interface OfficeSink {
   playerRemoved(id: string): void;
   trackPlayer(id: string, time: number, pose: PlayerPose): void;
   untrackPlayer(id: string): void;
+  /** Chat (spec 004): vaciar al entrar y al perder la conexión, y lo que llega del servidor. */
+  chatReset(): void;
+  chatHistory(messages: ChatMessage[]): void;
+  chatMessage(message: ChatMessage, now: number, selfId: string): void;
+  chatNotice(notice: ChatNotice): void;
+  chatRejected(now: number): void;
 }
 
 export interface OfficeSession {
   sessionId: string;
   sendMove(move: MoveMessage): void;
+  sendChat(text: string): void;
   onCorrection(callback: (correction: CorrectionMessage) => void): void;
   leave(): Promise<void>;
 }
@@ -71,6 +82,27 @@ function parseCorrection(raw: unknown): CorrectionMessage | null {
   if (typeof raw !== "object" || raw === null) return null;
   const { x, z } = raw as Record<string, unknown>;
   return typeof x === "number" && Number.isFinite(x) && typeof z === "number" && Number.isFinite(z) ? { x, z } : null;
+}
+
+const isObject = (raw: unknown): raw is Record<string, unknown> =>
+  typeof raw === "object" && raw !== null && !Array.isArray(raw);
+const isFiniteNumber = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
+
+/** Mensaje de chat si el payload tiene la forma de `ChatMessage`; si no, `null`. */
+function parseChatMessage(raw: unknown): ChatMessage | null {
+  if (!isObject(raw)) return null;
+  const { id, authorId, authorName, authorColor, text, sentAt } = raw;
+  if (!isFiniteNumber(id) || !isFiniteNumber(sentAt)) return null;
+  if (typeof authorId !== "string" || typeof authorName !== "string") return null;
+  if (typeof authorColor !== "string" || typeof text !== "string") return null;
+  return { id, authorId, authorName, authorColor, text, sentAt };
+}
+
+function parseChatNotice(raw: unknown): ChatNotice | null {
+  if (!isObject(raw)) return null;
+  const { kind, name, sentAt } = raw;
+  if ((kind !== "joined" && kind !== "left") || typeof name !== "string" || !isFiniteNumber(sentAt)) return null;
+  return { kind, name, sentAt };
 }
 
 const poseOf = (p: PlayerData): PlayerPose => ({ x: p.x, z: p.z, rotY: p.rotY });
@@ -127,8 +159,27 @@ export async function joinOffice<R extends JoinedRoom>(
     if (correction) correctionCallback(correction);
   });
 
+  room.onMessage(MSG.chatHistory, (raw) => {
+    if (!Array.isArray(raw)) return;
+    sink.chatHistory(raw.flatMap((item) => parseChatMessage(item) ?? []));
+  });
+  room.onMessage(MSG.chatMessage, (raw) => {
+    const message = parseChatMessage(raw);
+    if (message) sink.chatMessage(message, deps.now(), selfId);
+  });
+  room.onMessage(MSG.chatNotice, (raw) => {
+    const notice = parseChatNotice(raw);
+    if (notice) sink.chatNotice(notice);
+  });
+  room.onMessage(MSG.chatRejected, () => sink.chatRejected(deps.now()));
+
+  // El panel empieza de nuevo en cada entrada; el historial se pide cuando ya hay quien lo escuche (AC-1, AC-15).
+  sink.chatReset();
+  room.send(MSG.chatHistory, undefined);
+
   room.onLeave((code) => {
     deps.log(`[net] Desconectado del servidor (código ${code})`);
+    sink.chatReset();
     for (const id of names.keys()) sink.untrackPlayer(id);
     names.clear();
     if (!leaving) sink.connectionLost();
@@ -137,6 +188,7 @@ export async function joinOffice<R extends JoinedRoom>(
   return {
     sessionId: selfId,
     sendMove: (move) => room.send(MSG.move, move),
+    sendChat: (text) => room.send(MSG.chat, { text } satisfies ChatSend),
     onCorrection: (callback) => {
       correctionCallback = callback;
     },
@@ -172,9 +224,17 @@ const defaultSink: OfficeSink = {
   joinFailed: (message) => sessionStore.getState().joinFailed(message),
   connectionLost: () => sessionStore.getState().connectionLost(),
   playerAdded: (id, info) => sessionStore.getState().playerAdded(id, info),
-  playerRemoved: (id) => sessionStore.getState().playerRemoved(id),
+  playerRemoved: (id) => {
+    sessionStore.getState().playerRemoved(id);
+    chatStore.getState().playerLeft(id);
+  },
   trackPlayer: (id, time, pose) => remotePlayers.track(id, time, pose),
   untrackPlayer: (id) => remotePlayers.untrack(id),
+  chatReset: () => chatStore.getState().reset(),
+  chatHistory: (messages) => chatStore.getState().history(messages),
+  chatMessage: (message, now, selfId) => chatStore.getState().received(message, now, selfId),
+  chatNotice: (notice) => chatStore.getState().notice(notice),
+  chatRejected: (now) => chatStore.getState().rateLimited(now),
 };
 
 /** Entrada real desde la UI: SDK de Colyseus, store de la sesión y registro de posiciones. */

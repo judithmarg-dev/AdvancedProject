@@ -1,7 +1,7 @@
 import type { Vec2 } from "@office/shared";
 
-/** Qué parte de la entrada nos interesa de un evento de teclado. */
-type KeyEvent = { key?: unknown };
+/** Qué parte de la entrada nos interesa de un evento de teclado o de foco. */
+type KeyEvent = { key?: unknown; target?: unknown };
 
 type KeyHandler = (event: KeyEvent) => void;
 
@@ -21,6 +21,13 @@ const KEY_DIRECTIONS: Record<string, Vec2> = {
   d: { x: 1, z: 0 },
   arrowright: { x: 1, z: 0 },
 };
+
+/** ¿El evento viene de un campo donde se escribe (chat)? Ahí las teclas son texto, no movimiento (spec 004 AC-9). */
+export function isEditableTarget(target: unknown): boolean {
+  if (typeof target !== "object" || target === null) return false;
+  const { tagName, isContentEditable } = target as { tagName?: unknown; isContentEditable?: unknown };
+  return tagName === "INPUT" || tagName === "TEXTAREA" || isContentEditable === true;
+}
 
 export function isMovementKey(key: string): boolean {
   return key.toLowerCase() in KEY_DIRECTIONS;
@@ -52,7 +59,7 @@ export function createKeyboardInput(target: ListenerTarget) {
   const pressed = new Set<string>();
 
   const onKeyDown = (event: KeyEvent) => {
-    if (typeof event.key !== "string") return;
+    if (typeof event.key !== "string" || isEditableTarget(event.target)) return;
     if (isMovementKey(event.key)) pressed.add(event.key.toLowerCase());
   };
 
@@ -62,11 +69,16 @@ export function createKeyboardInput(target: ListenerTarget) {
   };
 
   const clear = () => pressed.clear();
+  // Al pasar a escribir, las teclas que seguían pulsadas no deben dejar al avatar andando (spec 004 AC-9).
+  const onFocusIn = (event: KeyEvent) => {
+    if (isEditableTarget(event.target)) clear();
+  };
 
   target.addEventListener("keydown", onKeyDown);
   target.addEventListener("keyup", onKeyUp);
   target.addEventListener("blur", clear);
   target.addEventListener("visibilitychange", clear);
+  target.addEventListener("focusin", onFocusIn);
 
   return {
     direction: (): Vec2 => directionFromKeys(pressed),
@@ -76,6 +88,7 @@ export function createKeyboardInput(target: ListenerTarget) {
       target.removeEventListener("keyup", onKeyUp);
       target.removeEventListener("blur", clear);
       target.removeEventListener("visibilitychange", clear);
+      target.removeEventListener("focusin", onFocusIn);
       pressed.clear();
     },
   };

@@ -9,3 +9,4 @@ Estados: `Draft` → `Approved` → `In progress` → `Implemented`.
 | 001 | `001-skeleton` | Fase 0 | Implemented |
 | 002 | `002-local-scene` | Fase 1 | Implemented |
 | 003 | `003-multiplayer` | Fase 2 | Implemented |
+| 004 | `004-chat` | Fase 3 | Implemented |

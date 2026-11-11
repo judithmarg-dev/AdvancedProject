@@ -28,7 +28,7 @@ proximidad (spec 005).
 - **AC-4** Dado un nombre válido, cuando el visitante pulsa el botón o la tecla Intro, entonces entra a la sala: la pantalla de entrada desaparece, su avatar aparece en el punto de entrada con el color que le asigna el servidor y con su nombre flotando encima.
 
 ### Presencia
-- **AC-5** Dado un participante A en la sala, cuando un participante B entra desde otra pestaña, entonces A ve aparecer el avatar de B con su nombre y su color, B ve el avatar de A en la posición y orientación que A tiene en ese momento, y la consola del navegador de A registra la llegada de B con su nombre (sin aviso en pantalla).
+- **AC-5** Dado un participante A en la sala, cuando un participante B entra desde otra pestaña, entonces A ve aparecer el avatar de B con su nombre y su color, B ve el avatar de A en la posición y orientación que A tiene en ese momento, y la consola del navegador de A registra la llegada de B con su nombre (sin aviso en pantalla). *(Actualizado por spec 004 AC-16: además se anuncia en el panel del chat, sin burbuja; la consola se mantiene.)*
 - **AC-6** Dados varios participantes conectados a la vez, cuando se observa la sala, entonces cada uno tiene un color distinto al de los demás presentes.
 - **AC-7** Dada la sala con varios participantes, cuando cualquiera de ellos mira la escena, entonces todos los avatares, incluido el propio, llevan su etiqueta de nombre, y las etiquetas se leen siempre de frente a la cámara, encima de su avatar y le siguen al moverse.
 - **AC-8** Dados dos participantes con el mismo nombre, cuando ambos están en la sala, entonces los dos pueden estar dentro a la vez y cada uno sigue siendo un avatar distinto con su propio color.
@@ -42,7 +42,7 @@ proximidad (spec 005).
 - **AC-14** Dado un mensaje de movimiento mal formado (campos que faltan, tipos incorrectos o valores no numéricos), cuando el servidor lo recibe, entonces lo descarta sin romperse ni afectar a los demás participantes, y lo registra en su consola.
 
 ### Salida y fallos
-- **AC-15** Dado un participante en la sala, cuando cierra la pestaña, recarga o pierde la conexión, entonces su avatar y su etiqueta desaparecen de las pantallas de los demás en menos de 2 s, la consola del servidor registra la salida con su nombre y la consola del navegador de los demás también (sin aviso en pantalla).
+- **AC-15** Dado un participante en la sala, cuando cierra la pestaña, recarga o pierde la conexión, entonces su avatar y su etiqueta desaparecen de las pantallas de los demás en menos de 2 s, la consola del servidor registra la salida con su nombre y la consola del navegador de los demás también (sin aviso en pantalla). *(Actualizado por spec 004 AC-16: además se anuncia en el panel del chat, sin burbuja; la consola se mantiene.)*
 - **AC-16** Dado un participante que sale y vuelve a entrar, cuando entra de nuevo, entonces aparece una sola vez (sin avatares duplicados ni restos del anterior) en el punto de entrada.
 - **AC-17** Dado el servidor detenido, cuando el visitante intenta entrar, entonces sigue en la pantalla de entrada (no entra en modo local), ve un aviso claro de que no se pudo conectar, conserva el nombre escrito, la página no se rompe y puede volver a intentarlo pulsando de nuevo el botón, sin recargar.
 - **AC-18** Dado un participante en la sala, cuando el servidor se detiene, entonces los avatares de los demás desaparecen y vuelve a la pantalla de entrada con un aviso de que se perdió la conexión, con su nombre conservado y la opción de reintentar como en AC-17; la página no se rompe.
@@ -65,7 +65,7 @@ proximidad (spec 005).
 - Capacidad: 20 participantes por sala (límite del MVP).
 - Pantalla de entrada: la sala se ve de fondo, atenuada, sin avatares ni movimiento del visitante; si el servidor no responde, el visitante se queda en ella, y si la conexión se pierde estando dentro, vuelve a ella.
 - Corrección de posición rechazada: inmediata, sin transición.
-- Llegadas y salidas de otros participantes: solo se registran en la consola del navegador, sin aviso en pantalla.
+- Llegadas y salidas de otros participantes: solo se registran en la consola del navegador, sin aviso en pantalla. *(Actualizado por spec 004 AC-16: además se anuncia en el panel del chat, sin burbuja; la consola se mantiene.)*
 - Todos entran por el punto de entrada de la spec 002 o, si está ocupado, por el hueco libre más cercano.
 - Los avatares chocan entre sí con el mismo radio que usan contra los muebles. El cliente frena contra la posición que ve de los demás; el servidor solo rechaza solapes claros (centros a menos de un radio de avatar) que acercan a los dos avatares, para que el retraso de red no provoque saltos atrás.
 - Salida: cerrar, recargar o perder la conexión equivale a salir; no hay reconexión automática ni recuperación de la sesión.

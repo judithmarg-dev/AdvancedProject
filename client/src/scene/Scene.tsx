@@ -11,7 +11,7 @@ import { usePlayerController } from "./usePlayerController";
 /** Avatar propio: solo existe dentro de la sala; cada entrada empieza donde lo coloca el servidor (AC-24). */
 function LocalPlayer({ session, self }: { session: OfficeSession; self: SelfInfo }) {
   const player = usePlayerController(session, self.spawn);
-  return <Avatar player={player} name={self.name} color={self.color} />;
+  return <Avatar id={session.sessionId} player={player} name={self.name} color={self.color} />;
 }
 
 /** Todo lo que necesita el bucle de fotogramas; vive dentro del lienzo. */
