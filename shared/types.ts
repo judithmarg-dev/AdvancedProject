@@ -9,7 +9,20 @@ export const SEND_RATE_HZ = 12;
 export const INTERPOLATION_DELAY_MS = 120;
 
 /** Mensajes de la sala. */
-export const MSG = { move: "move", correction: "correction" } as const;
+export const MSG = {
+  move: "move",
+  correction: "correction",
+  /** C→S: texto que quiere enviar el participante (`ChatSend`). */
+  chat: "chat",
+  /** S→todos: mensaje aceptado (`ChatMessage`). */
+  chatMessage: "chatMessage",
+  /** C→S: petición sin payload; S→C: últimos mensajes (`ChatMessage[]`). */
+  chatHistory: "chatHistory",
+  /** S→demás: llegada o salida de un participante (`ChatNotice`). */
+  chatNotice: "chatNotice",
+  /** S→emisor: mensaje descartado por superar el ritmo (`ChatRejected`). */
+  chatRejected: "chatRejected",
+} as const;
 
 /** Cliente → servidor: posición y orientación deseadas del propio avatar. */
 export type MoveMessage = { x: number; z: number; rotY: number };
@@ -31,7 +44,24 @@ export interface PlayerData {
   color: string;
 }
 
+/** C→S: lo único que decide el cliente de un mensaje de chat. */
+export type ChatSend = { text: string };
+/** S→C: mensaje de chat tal como lo fija el servidor (autor, color, hora en ms epoch e id creciente). */
+export type ChatMessage = {
+  id: number;
+  authorId: string;
+  authorName: string;
+  authorColor: string;
+  text: string;
+  sentAt: number;
+};
+/** S→C: aviso de llegada o salida. */
+export type ChatNotice = { kind: "joined" | "left"; name: string; sentAt: number };
+/** S→emisor: por qué se descartó su mensaje. */
+export type ChatRejected = { reason: "rateLimited" };
+
 export * from "./world";
 export * from "./players";
 export * from "./movementRules";
 export * from "./avatarCollision";
+export * from "./chat";
