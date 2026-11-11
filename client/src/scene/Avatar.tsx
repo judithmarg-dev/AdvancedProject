@@ -4,6 +4,7 @@ import type { Group, Mesh } from "three";
 import { AVATAR } from "@office/shared";
 import { PALETTE, shadeColor } from "./palette";
 import { advanceWalkPhase, breathingOffset, squashScale, walkBob } from "./animation";
+import { ChatBubble } from "./ChatBubble";
 import { NameLabel } from "./NameLabel";
 import { avatarGrainTexture } from "./grain";
 import type { PlayerState } from "./usePlayerController";
@@ -45,10 +46,10 @@ function Eye({ x }: { x: number }) {
 
 /**
  * Avatar de un participante (propio o ajeno): cápsula redondeada de su color con cara simple, bracitos,
- * pies y su nombre encima. Toda la animación ocurre en `useFrame` sobre refs; no hay estado de React por
+ * pies, su nombre encima y, sobre él, la burbuja de su último mensaje de chat (spec 004). Toda la animación ocurre en `useFrame` sobre refs; no hay estado de React por
  * fotograma (spec 002 AC-14).
  */
-export function Avatar({ player, color, name }: { player: AvatarMotion; color: string; name: string }) {
+export function Avatar({ id, player, color, name }: { id: string; player: AvatarMotion; color: string; name: string }) {
   const footColor = useMemo(() => shadeColor(color), [color]);
   const root = useRef<Group>(null);
   const body = useRef<Group>(null);
@@ -130,6 +131,7 @@ export function Avatar({ player, color, name }: { player: AvatarMotion; color: s
 
       {/* fuera del cuerpo: la etiqueta no se deforma con el squash ni sube y baja al respirar */}
       <NameLabel name={name} />
+      <ChatBubble id={id} />
     </group>
   );
 }

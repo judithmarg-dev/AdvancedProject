@@ -19,5 +19,5 @@ export function RemoteAvatar({ id, name, color }: { id: string; name: string; co
     if (pose) updateRemoteMotion(motion, pose, delta);
   });
 
-  return <Avatar player={motion} name={name} color={color} />;
+  return <Avatar id={id} player={motion} name={name} color={color} />;
 }

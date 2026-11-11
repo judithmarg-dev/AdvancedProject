@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { JOIN_ERROR, MSG, ROOM_NAME, type PlayerData } from "@office/shared";
+import { JOIN_ERROR, MSG, ROOM_NAME, type ChatMessage, type ChatNotice, type PlayerData } from "@office/shared";
 import { JOIN_ERROR_MESSAGES, joinOffice, type JoinedRoom, type OfficeDeps, type OfficeSink, type PlayerEvents } from "./office";
 
 const URL = "ws://localhost:2567";
@@ -43,6 +43,11 @@ function setup(join: (name: string, options: unknown) => Promise<JoinedRoom>) {
     playerRemoved: vi.fn(),
     trackPlayer: vi.fn(),
     untrackPlayer: vi.fn(),
+    chatReset: vi.fn(),
+    chatHistory: vi.fn(),
+    chatMessage: vi.fn(),
+    chatNotice: vi.fn(),
+    chatRejected: vi.fn(),
   } satisfies OfficeSink;
   return { deps, sink, joinOrCreate, events: () => events! };
 }
@@ -169,5 +174,74 @@ describe("joinOffice", () => {
     await session?.leave();
 
     expect(sink.connectionLost).not.toHaveBeenCalled();
+  });
+
+  describe("chat (spec 004)", () => {
+    const chat = (extra: Partial<ChatMessage> = {}): ChatMessage => ({
+      id: 7,
+      authorId: "bea",
+      authorName: "Bea",
+      authorColor: "#A9CBE8",
+      text: "hola",
+      sentAt: 1_700_000_000_000,
+      ...extra,
+    });
+
+    async function joined() {
+      const fake = fakeRoom("me");
+      const { deps, sink } = setup(async () => fake.room);
+      const session = await joinOffice(URL, "Ana", deps, sink);
+      return { ...fake, sink, session };
+    }
+
+    it("envía el texto como mensaje de chat (AC-2)", async () => {
+      const { room, session } = await joined();
+      session?.sendChat("hola");
+      expect(room.send).toHaveBeenCalledWith(MSG.chat, { text: "hola" });
+    });
+
+    it("al entrar vacía el chat y pide el historial (AC-1, AC-15)", async () => {
+      const { room, sink } = await joined();
+      expect(sink.chatReset).toHaveBeenCalledTimes(1);
+      expect(room.send).toHaveBeenCalledWith(MSG.chatHistory, undefined);
+    });
+
+    it("entrega el historial descartando entradas mal formadas (AC-1)", async () => {
+      const { message, sink } = await joined();
+      message(MSG.chatHistory, [chat({ id: 1 }), { id: "x" }, chat({ id: 2 })]);
+      message(MSG.chatHistory, "no es una lista");
+      expect(sink.chatHistory).toHaveBeenCalledTimes(1);
+      expect(sink.chatHistory).toHaveBeenCalledWith([chat({ id: 1 }), chat({ id: 2 })]);
+    });
+
+    it("entrega cada mensaje con la hora local y el id propio, y descarta los mal formados (AC-2)", async () => {
+      const { message, sink } = await joined();
+      message(MSG.chatMessage, chat());
+      message(MSG.chatMessage, { ...chat(), text: 3 });
+      message(MSG.chatMessage, null);
+      expect(sink.chatMessage).toHaveBeenCalledTimes(1);
+      expect(sink.chatMessage).toHaveBeenCalledWith(chat(), 1000, "me");
+    });
+
+    it("entrega los avisos de llegada y salida y descarta los mal formados (AC-16)", async () => {
+      const { message, sink } = await joined();
+      const notice: ChatNotice = { kind: "left", name: "Bea", sentAt: 5 };
+      message(MSG.chatNotice, notice);
+      message(MSG.chatNotice, { kind: "explota", name: "Bea", sentAt: 5 });
+      expect(sink.chatNotice).toHaveBeenCalledTimes(1);
+      expect(sink.chatNotice).toHaveBeenCalledWith(notice);
+    });
+
+    it("avisa cuando el servidor rechaza por ritmo (AC-13)", async () => {
+      const { message, sink } = await joined();
+      message(MSG.chatRejected, { reason: "rateLimited" });
+      expect(sink.chatRejected).toHaveBeenCalledWith(1000);
+    });
+
+    it("al perder la conexión vacía el chat (AC-15)", async () => {
+      const { drop, sink } = await joined();
+      drop(1006);
+      expect(sink.chatReset).toHaveBeenCalledTimes(2);
+    });
   });
 });
