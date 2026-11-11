@@ -1,6 +1,18 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { boot, type ColyseusTestServer } from "@colyseus/testing";
-import { AVATAR_GAP, JOIN_ERROR, MAX_PLAYERS, MSG, ROOM_NAME, SPAWN, type CorrectionMessage } from "@office/shared";
+import {
+  AVATAR_GAP,
+  CHAT,
+  JOIN_ERROR,
+  MAX_PLAYERS,
+  MSG,
+  ROOM_NAME,
+  SPAWN,
+  type ChatMessage,
+  type ChatNotice,
+  type ChatRejected,
+  type CorrectionMessage,
+} from "@office/shared";
 import type { OfficeState } from "@office/shared/schema";
 import { createGameServer } from "../server";
 import type { OfficeRoom } from "./OfficeRoom";
@@ -274,6 +286,148 @@ describe("OfficeRoom", () => {
       const away = step(0.1);
       mover.send(MSG.move, { ...away, rotY: 0 });
       await vi.waitFor(() => expect(players(room).get(mover.sessionId)?.x).toBeCloseTo(away.x));
+    });
+  });
+
+  describe("chat", () => {
+    /** Acumula los mensajes de un tipo que recibe `client`. */
+    function inbox<T>(client: { onMessage(type: string, callback: (payload: T) => void): unknown }, type: string): T[] {
+      const received: T[] = [];
+      client.onMessage(type, (payload: T) => received.push(payload));
+      return received;
+    }
+
+    it("difunde un mensaje a todos con autor, color, hora e id fijados por el servidor (AC-2, AC-11)", async () => {
+      const room = await createRoom();
+      const a = await colyseus.connectTo(room, { name: "Ana" });
+      const b = await colyseus.connectTo(room, { name: "Bea" });
+      const seenByA = inbox<ChatMessage>(a, MSG.chatMessage);
+      const seenByB = inbox<ChatMessage>(b, MSG.chatMessage);
+
+      const before = Date.now();
+      a.send(MSG.chat, { text: "  hola  ", authorName: "Bea", authorId: b.sessionId, authorColor: "#000000" });
+
+      await vi.waitFor(() => expect(seenByB).toHaveLength(1));
+      await vi.waitFor(() => expect(seenByA).toHaveLength(1));
+      const message = seenByB[0]!;
+      expect(message).toMatchObject({
+        authorId: a.sessionId,
+        authorName: "Ana",
+        authorColor: players(room).get(a.sessionId)?.color,
+        text: "hola",
+      });
+      expect(message.sentAt).toBeGreaterThanOrEqual(before);
+      expect(message.sentAt).toBeLessThanOrEqual(Date.now());
+      expect(seenByA[0]).toEqual(message);
+    });
+
+    it("todos reciben los mensajes en el mismo orden y con ids crecientes (AC-3)", async () => {
+      const room = await createRoom();
+      const a = await colyseus.connectTo(room, { name: "Ana" });
+      const b = await colyseus.connectTo(room, { name: "Bea" });
+      const seenByA = inbox<ChatMessage>(a, MSG.chatMessage);
+      const seenByB = inbox<ChatMessage>(b, MSG.chatMessage);
+
+      a.send(MSG.chat, { text: "uno" });
+      b.send(MSG.chat, { text: "dos" });
+      a.send(MSG.chat, { text: "tres" });
+
+      await vi.waitFor(() => expect(seenByA).toHaveLength(3));
+      await vi.waitFor(() => expect(seenByB).toHaveLength(3));
+      expect(seenByA).toEqual(seenByB);
+      const ids = seenByA.map((m) => m.id);
+      expect([...ids].sort((x, y) => x - y)).toEqual(ids);
+      expect(new Set(ids).size).toBe(3);
+    });
+
+    it.each([
+      ["vacío", { text: "" }],
+      ["solo espacios", { text: "    " }],
+      ["de 201 caracteres", { text: "a".repeat(201) }],
+      ["sin texto", { msg: "hola" }],
+      ["con texto no string", { text: 42 }],
+      ["que no es objeto", "hola"],
+    ])("descarta un mensaje %s, lo registra y la sala sigue (AC-4, AC-5, AC-12)", async (_case, payload) => {
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+      const room = await createRoom();
+      const a = await colyseus.connectTo(room, { name: "Ana" });
+      const b = await colyseus.connectTo(room, { name: "Bea" });
+      const seenByB = inbox<ChatMessage>(b, MSG.chatMessage);
+
+      a.send(MSG.chat, payload);
+      await vi.waitFor(() => expect(warn).toHaveBeenCalledWith(expect.stringContaining("Chat mal formado")));
+
+      b.send(MSG.chat, { text: "sigo aquí" });
+      await vi.waitFor(() => expect(seenByB.map((m) => m.text)).toEqual(["sigo aquí"]));
+      expect(players(room).size).toBe(2);
+    });
+
+    it("al superar 5 mensajes en 5 s descarta el exceso y avisa solo al emisor (AC-13)", async () => {
+      const room = await createRoom();
+      const a = await colyseus.connectTo(room, { name: "Ana" });
+      const b = await colyseus.connectTo(room, { name: "Bea" });
+      const seenByB = inbox<ChatMessage>(b, MSG.chatMessage);
+      const rejectedA = inbox<ChatRejected>(a, MSG.chatRejected);
+      const rejectedB = inbox<ChatRejected>(b, MSG.chatRejected);
+
+      for (let i = 1; i <= 6; i++) a.send(MSG.chat, { text: `m${i}` });
+      await vi.waitFor(() => expect(rejectedA).toEqual([{ reason: "rateLimited" }]));
+
+      b.send(MSG.chat, { text: "yo también" });
+      await vi.waitFor(() => expect(seenByB.map((m) => m.text)).toEqual(["m1", "m2", "m3", "m4", "m5", "yo también"]));
+      expect(rejectedB).toEqual([]);
+    });
+
+    it("entrega a quien lo pide los últimos 20 mensajes, también de quien ya salió, sin avisos (AC-1, AC-14)", async () => {
+      const room = await createRoom();
+      const watcher = await colyseus.connectTo(room, { name: "Vera" });
+      const seen = inbox<ChatMessage>(watcher, MSG.chatMessage);
+      const senders = [];
+      for (let i = 0; i < 5; i++) senders.push(await colyseus.connectTo(room, { name: `P${i}` }));
+
+      for (const [i, sender] of senders.entries()) {
+        for (let j = 0; j < 5; j++) sender.send(MSG.chat, { text: `${i}-${j}` });
+        await vi.waitFor(() => expect(seen).toHaveLength((i + 1) * 5));
+      }
+      await senders[4]!.leave();
+      await vi.waitFor(() => expect(players(room).size).toBe(5));
+
+      const late = await colyseus.connectTo(room, { name: "Lía" });
+      const history = late.waitForMessage(MSG.chatHistory);
+      late.send(MSG.chatHistory);
+      const list = (await history) as ChatMessage[];
+
+      expect(CHAT.historySize).toBe(20);
+      expect(list).toEqual(seen.slice(-20));
+      expect(list.some((m) => m.authorName === "P4")).toBe(true);
+    });
+
+    it("con la sala recién creada el historial está vacío (AC-1)", async () => {
+      const room = await createRoom();
+      const a = await colyseus.connectTo(room, { name: "Ana" });
+      const history = a.waitForMessage(MSG.chatHistory);
+      a.send(MSG.chatHistory);
+      expect(await history).toEqual([]);
+    });
+
+    it("anuncia llegadas y salidas a los demás, no al propio participante (AC-16)", async () => {
+      const room = await createRoom();
+      const a = await colyseus.connectTo(room, { name: "Ana" });
+      const noticesA = inbox<ChatNotice>(a, MSG.chatNotice);
+
+      const b = await colyseus.connectTo(room, { name: "Bea" });
+      const noticesB = inbox<ChatNotice>(b, MSG.chatNotice);
+      await vi.waitFor(() => expect(noticesA).toMatchObject([{ kind: "joined", name: "Bea" }]));
+
+      await b.leave();
+      await vi.waitFor(() =>
+        expect(noticesA).toMatchObject([
+          { kind: "joined", name: "Bea" },
+          { kind: "left", name: "Bea" },
+        ]),
+      );
+      expect(noticesB).toEqual([]);
+      expect(noticesA.every((n) => typeof n.sentAt === "number")).toBe(true);
     });
   });
 
