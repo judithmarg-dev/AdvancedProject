@@ -54,8 +54,8 @@ AdvancedProject/
 - **Hecho cuando**: dos pestañas se ven moverse entre sí con fluidez.
 
 ### Fase 3: Chat
-- [ ] Mensajes por sala, panel UI, burbuja corta sobre el avatar.
-- **Hecho cuando**: un mensaje en una pestaña aparece en la otra.
+- [x] Mensajes por sala, panel UI, burbuja corta sobre el avatar.
+- **Hecho cuando**: un mensaje en una pestaña aparece en la otra. ✔ (validado a mano el 2026-11-10, spec 004)
 
 ### Fase 4: Audio/video por proximidad
 - [ ] Endpoint en el servidor que emite tokens de LiveKit.
@@ -82,12 +82,12 @@ Múltiples salas, editor de mapas, auth, persistencia, avatares personalizables,
 - Respuestas breves: no reexplicar decisiones ya cerradas aquí.
 
 ## Estado actual (actualizar al terminar cada sesión)
-- Fecha: 2026-11-04
-- Fase en curso: Fase 2 cerrada (spec 003 `Implemented`); siguiente, Fase 3 (spec 004, chat)
+- Fecha: 2026-11-10
+- Fase en curso: Fase 3 cerrada (spec 004 `Implemented`); siguiente, Fase 4 (spec 005, audio/video por proximidad)
 - Modelo en uso: Opus 5.5
-- Último logro: spec 003 cerrada (T1–T39): sala Colyseus autoritativa (nombre, color, capacidad 20, validación de movimiento con corrección), pantalla de entrada, etiquetas de nombre, interpolación de avatares remotos, textura granulada del avatar y colisiones entre avatares (hueco libre al entrar, margen de red en el servidor). Validación manual aprobada el 2026-11-04. `npm run build` y `npm test` pasan (182 pruebas).
+- Último logro: spec 004 cerrada (T1–T19): chat de sala por mensajes (validación, ritmo 5/5 s, autor y hora fijados por el servidor, historial de 20 en memoria), panel plegable con no leídos, avisos de llegada/salida, burbuja sobre el avatar y teclado que no mueve el avatar al escribir. Validación manual aprobada el 2026-11-10. `npm run build` y `npm test` pasan (241 pruebas).
 - Bloqueos: ninguno
-- Siguiente paso concreto: `/sdd-spec` de la spec 004 (Fase 3, chat)
+- Siguiente paso concreto: `/sdd-spec` de la spec 005 (Fase 4, audio/video por proximidad con LiveKit)
 
 ## Decisiones (agregar al tomar nuevas)
 - 2026-10-17: stack fijado según tabla superior.
@@ -101,6 +101,7 @@ Múltiples salas, editor de mapas, auth, persistencia, avatares personalizables,
 - 2026-10-27 (spec 002): dependencias de la Fase 1 en `client/`: `three` (0.186), `@react-three/fiber` (9.8); dev: `@types/three`. `@react-three/drei` se descartó en la implementación (sin usos: todo sale de primitivas de three); se reevalúa en la Fase 5. `zustand` se difiere a la spec 003 (en la Fase 1 no hay estado compartido entre componentes: el movimiento vive en refs por fotograma). Medidas del mundo y colisión AABB (`shared/world.ts`) se ponen en `shared/` para que el servidor las use como autoridad en la spec 003.
 - 2026-11-02 (spec 003): dependencias de la Fase 2: `@colyseus/schema` ^5 en `shared/` (el schema de la sala es un tipo de red; antes solo llegaba como dependencia par de core/sdk) y `zustand` ^5 en `client/` (estado de la sesión y lista de participantes). Instalar con `npm install` desde Windows.
 - 2026-11-04 (spec 003): los avatares chocan entre sí (cambio pedido en validación). El cliente frena contra la posición interpolada de los demás; el servidor coloca al que entra en el hueco libre más cercano a SPAWN y solo rechaza solapes claros (centros a < 1 radio y acercándose) para que la latencia no cause correcciones. Sin dependencias nuevas.
+- 2026-11-10 (spec 004): chat por mensajes de sala (no por el schema), historial de 20 en memoria en el servidor y avisos de llegada/salida emitidos por el servidor. Cambia la regla de la spec 003 «llegadas y salidas solo en consola»: ahora también aparecen en el panel. Sin dependencias nuevas.
 
 ## Metodología
 Cada fase se ejecuta como una spec SDD (`specs/NNN-nombre/`) con el flujo de `CLAUDE.md`:
