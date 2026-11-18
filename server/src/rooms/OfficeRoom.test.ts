@@ -12,6 +12,7 @@ import {
   type ChatNotice,
   type ChatRejected,
   type CorrectionMessage,
+  type AvAccess,
 } from "@office/shared";
 import type { OfficeState } from "@office/shared/schema";
 import { createGameServer } from "../server";
@@ -485,5 +486,12 @@ describe("OfficeRoom", () => {
 
       expect(players(room).get(c.sessionId)?.color).toBe(freed);
     });
+  });
+  it("sin configuración de audio/video responde que la voz está desactivada (spec 005 AC-3)", async () => {
+    const room = await createRoom();
+    const a = await colyseus.connectTo(room, { name: "Ana" });
+    const reply = a.waitForMessage(MSG.avAccess);
+    a.send(MSG.avAccess);
+    expect(await reply).toEqual({ ok: false, reason: "disabled" } satisfies AvAccess);
   });
 });

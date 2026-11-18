@@ -12,12 +12,17 @@ import {
   parseMoveMessage,
   pickColor,
   validateMove,
+  type AvAccess,
   type ChatMessage,
   type ChatNotice,
   type ChatRejected,
   type CorrectionMessage,
 } from "@office/shared";
 import { OfficeState, Player } from "@office/shared/schema";
+import type { AccessIssuer } from "../livekit";
+
+/** Configuración del servidor para la sala: quién emite el acceso a audio/video (`null` = voz desactivada). */
+export type OfficeRoomOptions = { avIssuer: AccessIssuer | null };
 
 type JoinAuth = { name: string };
 
@@ -31,11 +36,21 @@ export class OfficeRoom extends Room<{ state: OfficeState }> {
   /** Últimos mensajes de chat, para quien entra después (spec 004 AC-1). Solo en memoria. */
   private chatHistory: ChatMessage[] = [];
   private nextChatId = 1;
+  /** Lo fija el servidor al definir la sala (`withOptions`), nunca las opciones de un cliente. */
+  protected avIssuer: AccessIssuer | null = null;
+
+  /** Sala con la configuración del servidor fijada en la clase: un cliente no puede sustituirla al crearla. */
+  static withOptions(options: OfficeRoomOptions): typeof OfficeRoom {
+    return class ConfiguredOfficeRoom extends OfficeRoom {
+      protected avIssuer = options.avIssuer;
+    };
+  }
 
   onCreate() {
     this.onMessage(MSG.move, (client: Client, raw: unknown) => this.handleMove(client, raw));
     this.onMessage(MSG.chat, (client: Client, raw: unknown) => this.handleChat(client, raw));
     this.onMessage(MSG.chatHistory, (client: Client) => client.send(MSG.chatHistory, this.chatHistory));
+    this.onMessage(MSG.avAccess, (client: Client) => void this.handleAvAccess(client));
   }
 
   onAuth(_client: Client, options: unknown): JoinAuth {
@@ -115,6 +130,27 @@ export class OfficeRoom extends Room<{ state: OfficeState }> {
     };
     this.chatHistory = [...this.chatHistory, message].slice(-CHAT.historySize);
     this.broadcast(MSG.chatMessage, message);
+  }
+
+  /**
+   * Acceso al canal de audio/video solo para quien está en la sala, con su id de sesión y su nombre; lo que
+   * mande el cliente se ignora (spec 005 AC-2). Sin configuración o si la firma falla, lo dice (AC-3).
+   */
+  private async handleAvAccess(client: Client) {
+    const player = this.state.players.get(client.sessionId);
+    if (!player) return;
+    let reply: AvAccess;
+    if (!this.avIssuer) {
+      reply = { ok: false, reason: "disabled" };
+    } else {
+      try {
+        reply = { ok: true, ...(await this.avIssuer.issue(client.sessionId, player.name)) };
+      } catch (err) {
+        console.error(`[OfficeRoom] No se pudo emitir el acceso de audio/video para ${player.name}:`, (err as Error).message);
+        reply = { ok: false, reason: "error" };
+      }
+    }
+    client.send(MSG.avAccess, reply);
   }
 
   /** Aviso de llegada o salida para los demás; no forma parte del historial (spec 004 AC-16). */

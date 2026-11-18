@@ -12,6 +12,7 @@
     "@colyseus/sdk": "^0.18.5",
     "@office/shared": "*",
     "@react-three/fiber": "^9.8.2",
+    "livekit-client": "^2.23.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "three": "^0.186.1",
