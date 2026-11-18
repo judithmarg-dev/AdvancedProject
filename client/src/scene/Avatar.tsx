@@ -130,7 +130,7 @@ export function Avatar({ id, player, color, name }: { id: string; player: Avatar
       </group>
 
       {/* fuera del cuerpo: la etiqueta no se deforma con el squash ni sube y baja al respirar */}
-      <NameLabel name={name} />
+      <NameLabel id={id} name={name} />
       <ChatBubble id={id} />
     </group>
   );

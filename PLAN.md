@@ -58,11 +58,11 @@ AdvancedProject/
 - **Hecho cuando**: un mensaje en una pestaña aparece en la otra. ✔ (validado a mano el 2026-11-10, spec 004)
 
 ### Fase 4: Audio/video por proximidad
-- [ ] Endpoint en el servidor que emite tokens de LiveKit.
-- [ ] Cliente se une a la sala LiveKit al entrar.
-- [ ] Volumen de cada participante en función de la distancia (0 más allá de ~8 m).
-- [ ] Botones mic/cámara; video opcional en un panel pequeño.
-- **Hecho cuando**: al alejarte de otro usuario dejas de oírlo gradualmente.
+- [x] Endpoint en el servidor que emite tokens de LiveKit.
+- [x] Cliente se une a la sala LiveKit al entrar.
+- [x] Volumen de cada participante en función de la distancia (0 más allá de ~8 m).
+- [x] Botones mic/cámara; video opcional en un panel pequeño.
+- **Hecho cuando**: al alejarte de otro usuario dejas de oírlo gradualmente. (spec 005 cerrada el 2026-11-18 con validación manual aprobada por delegación; pendiente probar con LiveKit real, filas V1–V16)
 
 ### Fase 5: Pulido y modelado propio
 - [ ] Sala modelada en Blender, exportada GLB comprimido (Draco), < 5 MB.

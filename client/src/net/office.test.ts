@@ -48,6 +48,8 @@ function setup(join: (name: string, options: unknown) => Promise<JoinedRoom>) {
     chatMessage: vi.fn(),
     chatNotice: vi.fn(),
     chatRejected: vi.fn(),
+    avAccess: vi.fn(),
+    avStop: vi.fn(),
   } satisfies OfficeSink;
   return { deps, sink, joinOrCreate, events: () => events! };
 }
@@ -242,6 +244,41 @@ describe("joinOffice", () => {
       const { drop, sink } = await joined();
       drop(1006);
       expect(sink.chatReset).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe("audio/video (spec 005)", () => {
+    async function joined() {
+      const fake = fakeRoom("me");
+      const { deps, sink } = setup(async () => fake.room);
+      const session = await joinOffice(URL, "Ana", deps, sink);
+      return { ...fake, sink, session };
+    }
+
+    it("al entrar pide el acceso al canal sin pasos extra (AC-1)", async () => {
+      const { room } = await joined();
+      expect(room.send).toHaveBeenCalledWith(MSG.avAccess, undefined);
+    });
+
+    it("entrega la respuesta validada; lo mal formado cuenta como error (AC-1, AC-3)", async () => {
+      const { message, sink } = await joined();
+      message(MSG.avAccess, { ok: true, url: "ws://lk", token: "t" });
+      expect(sink.avAccess).toHaveBeenLastCalledWith({ ok: true, url: "ws://lk", token: "t" });
+      message(MSG.avAccess, { ok: true });
+      expect(sink.avAccess).toHaveBeenLastCalledWith({ ok: false, reason: "error" });
+    });
+
+    it("al perder la conexión sale también del canal de audio/video (AC-16)", async () => {
+      const { drop, sink } = await joined();
+      drop(1006);
+      expect(sink.avStop).toHaveBeenCalledTimes(1);
+      expect(sink.connectionLost).toHaveBeenCalled();
+    });
+
+    it("al salir voluntariamente también sale del canal (AC-16)", async () => {
+      const { session, sink } = await joined();
+      await session?.leave();
+      expect(sink.avStop).toHaveBeenCalledTimes(1);
     });
   });
 });

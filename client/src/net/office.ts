@@ -3,6 +3,8 @@ import {
   JOIN_ERROR,
   MSG,
   ROOM_NAME,
+  parseAvAccess,
+  type AvAccess,
   type ChatMessage,
   type ChatSend,
   type ChatNotice,
@@ -13,6 +15,7 @@ import {
 } from "@office/shared";
 import type { OfficeState } from "@office/shared/schema";
 import { chatStore } from "../store/chat";
+import { voice } from "./voiceInstance";
 import { sessionStore, type RemoteInfo, type SelfInfo } from "../store/session";
 import { remotePlayers, type PlayerPose } from "./remotePlayers";
 
@@ -55,6 +58,9 @@ export interface OfficeSink {
   chatMessage(message: ChatMessage, now: number, selfId: string): void;
   chatNotice(notice: ChatNotice): void;
   chatRejected(now: number): void;
+  /** Audio/video (spec 005): acceso concedido o denegado, y salir del canal al salir de la sala. */
+  avAccess(access: AvAccess): void;
+  avStop(): void;
 }
 
 export interface OfficeSession {
@@ -177,9 +183,14 @@ export async function joinOffice<R extends JoinedRoom>(
   sink.chatReset();
   room.send(MSG.chatHistory, undefined);
 
+  // Unirse al canal de audio/video sin pasos extra (spec 005 AC-1).
+  room.onMessage(MSG.avAccess, (raw) => sink.avAccess(parseAvAccess(raw)));
+  room.send(MSG.avAccess, undefined);
+
   room.onLeave((code) => {
     deps.log(`[net] Desconectado del servidor (código ${code})`);
     sink.chatReset();
+    sink.avStop();
     for (const id of names.keys()) sink.untrackPlayer(id);
     names.clear();
     if (!leaving) sink.connectionLost();
@@ -235,6 +246,8 @@ const defaultSink: OfficeSink = {
   chatMessage: (message, now, selfId) => chatStore.getState().received(message, now, selfId),
   chatNotice: (notice) => chatStore.getState().notice(notice),
   chatRejected: (now) => chatStore.getState().rateLimited(now),
+  avAccess: (access) => void voice.start(access),
+  avStop: () => void voice.stop(),
 };
 
 /** Entrada real desde la UI: SDK de Colyseus, store de la sesión y registro de posiciones. */

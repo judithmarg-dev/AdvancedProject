@@ -9,12 +9,12 @@ Orden: shared → server → client. Primero el test que falla, luego la impleme
 - [x] T5 · (AC-18) Implementar `getLiveKitConfig`, `createAccessIssuer`, aviso en arranque; `.env.example`.
 - [x] T6 · (AC-2, AC-3) Test: `OfficeRoom.test.ts` (acceso solo para quien está en la sala; `disabled` sin config).
 - [x] T7 · (AC-2, AC-3) Implementar el handler `avAccess` en `OfficeRoom` con emisor inyectado.
-- [ ] T8 · (AC-4, AC-6, AC-13, AC-15, AC-17) Test + implementar `client/src/store/av.ts`.
-- [ ] T9 · (AC-1, AC-3, AC-5, AC-6, AC-7, AC-9..AC-12, AC-14, AC-15, AC-17) Test: `client/src/net/voice.test.ts` con sala falsa.
-- [ ] T10 · Implementar `client/src/net/voice.ts` y `net/selfPose.ts`; `usePlayerController` publica la pose propia.
-- [ ] T11 · (AC-1, AC-16) Test + implementar en `net/office.ts`: pedir acceso al entrar, entregarlo, cerrar voz al salir.
-- [ ] T12 · (AC-8) Test + implementar atajos M/V (`ui/avKeys.ts`) con el filtro de campos de texto.
-- [ ] T13 · (AC-4, AC-5, AC-7, AC-14) `ui/AvControls.tsx`, `ui/VideoPanel.tsx`, estilos; montaje en `App.tsx`.
-- [ ] T14 · (AC-13) `scene/VoiceIndicator.tsx` junto a la etiqueta.
-- [ ] T15 · Validación manual (`/sdd-validate-impl`).
-- [ ] T16 · Trazabilidad en `spec.md` y `/sdd-verify`.
+- [x] T8 · (AC-4, AC-6, AC-13, AC-15, AC-17) Test + implementar `client/src/store/av.ts`.
+- [x] T9 · (AC-1, AC-3, AC-5, AC-6, AC-7, AC-9..AC-12, AC-14, AC-15, AC-17) Test: `client/src/net/voice.test.ts` con sala falsa.
+- [x] T10 · Implementar `client/src/net/voice.ts` y `net/selfPose.ts`; `usePlayerController` publica la pose propia.
+- [x] T11 · (AC-1, AC-16) Test + implementar en `net/office.ts`: pedir acceso al entrar, entregarlo, cerrar voz al salir.
+- [x] T12 · (AC-8) Test + implementar atajos M/V (`ui/avKeys.ts`) con el filtro de campos de texto.
+- [x] T13 · (AC-4, AC-5, AC-7, AC-14) `ui/AvControls.tsx`, `ui/VideoPanel.tsx`, estilos; montaje en `App.tsx`.
+- [x] T14 · (AC-13) `scene/VoiceIndicator.tsx` junto a la etiqueta.
+- [x] T15 · Validación manual (`/sdd-validate-impl`).
+- [x] T16 · Trazabilidad en `spec.md` y `/sdd-verify`.

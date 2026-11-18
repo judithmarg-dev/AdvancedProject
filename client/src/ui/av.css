@@ -1,0 +1,113 @@
+/* Audio/video (spec 005): botones abajo al centro, avisos encima y videos arriba a la derecha. */
+.av-controls {
+  position: fixed;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.5rem;
+}
+
+.av-button {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 0.95rem;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(246, 242, 233, 0.9);
+  box-shadow: 0 6px 20px rgba(47, 58, 44, 0.16);
+  color: #2f3a2c;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.av-button--on {
+  background: #7f9a6c;
+  color: #fff;
+}
+
+.av-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.av-notice {
+  position: fixed;
+  bottom: 4.2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.45rem 0.95rem;
+  border-radius: 999px;
+  background: #a5523f;
+  color: #fff;
+  font-size: 0.85rem;
+  pointer-events: none;
+}
+
+.video-panel {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: min(14rem, 40vw);
+  max-height: calc(100vh - 6rem);
+  overflow-y: auto;
+}
+
+.video-tile {
+  position: relative;
+  margin: 0;
+  overflow: hidden;
+  border-radius: 0.7rem;
+  background: #2f3a2c;
+  box-shadow: 0 6px 20px rgba(47, 58, 44, 0.2);
+  aspect-ratio: 4 / 3;
+}
+
+.video-tile video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.video-tile__video--mirrored {
+  transform: scaleX(-1);
+}
+
+.video-tile figcaption {
+  position: absolute;
+  left: 0.4rem;
+  bottom: 0.3rem;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(47, 58, 44, 0.7);
+  color: #f7f4ec;
+  font-size: 0.75rem;
+}
+
+/* En pantallas estrechas los botones van abajo a la derecha, en columna, para no tapar el chat. */
+@media (max-width: 760px) {
+  .av-controls {
+    left: auto;
+    right: 1rem;
+    transform: none;
+    flex-direction: column;
+  }
+
+  .av-button__label {
+    display: none;
+  }
+
+  .av-notice {
+    left: auto;
+    right: 1rem;
+    bottom: 7.5rem;
+    transform: none;
+  }
+}
