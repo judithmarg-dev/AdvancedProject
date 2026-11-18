@@ -2,9 +2,11 @@ import { useState } from "react";
 import type { OfficeSession } from "./net/office";
 import { Scene } from "./scene/Scene";
 import { useSession } from "./store/session";
+import { AvControls } from "./ui/AvControls";
 import { ChatPanel } from "./ui/ChatPanel";
 import { ControlsHint } from "./ui/ControlsHint";
 import { EntryScreen } from "./ui/EntryScreen";
+import { VideoPanel } from "./ui/VideoPanel";
 
 export function App() {
   const phase = useSession((state) => state.phase);
@@ -18,6 +20,9 @@ export function App() {
       {inRoom ? <ControlsHint /> : <EntryScreen onSession={setSession} />}
       {/* El chat solo existe dentro de la sala (spec 004 AC-1). */}
       {inRoom && <ChatPanel session={session} />}
+      {/* Audio/video por proximidad, también solo dentro de la sala (spec 005). */}
+      {inRoom && <AvControls />}
+      {inRoom && <VideoPanel />}
     </>
   );
 }

@@ -88,5 +88,50 @@ espontáneas por grupos sin salas aparte.
 ## Trazabilidad
 | AC | Prueba (archivo / método) o razón de no automatizar |
 |---|---|
+| AC-1 | `client/src/net/office.test.ts` («al entrar pide el acceso al canal…»); `client/src/net/voice.test.ts` («con acceso concedido se une sin pasos extra»); unión real con LiveKit: manual V1. |
+| AC-2 | `server/src/rooms/OfficeRoom.av.test.ts` («concede a quien está en la sala…», «ignora la identidad o el nombre que proponga el cliente»); `server/src/livekit.test.ts` (identidad, nombre, sala, permisos, TTL, firma). Prueba de humo con servidor real: token emitido (2026-11-18). |
+| AC-3 | `OfficeRoom.test.ts` («sin configuración… desactivada»); `OfficeRoom.av.test.ts` («si la firma falla…»); `voice.test.ts` («sin servicio o si la conexión falla…»); `store/av.test.ts`; `shared/av.test.ts` (`parseAvAccess`); aviso y botones: manual V2. |
+| AC-4 | `store/av.test.ts` («empieza apagado…», «conectado: … siguen apagados»); botones: manual V3 (DOM sin automatizar). |
+| AC-5 | `voice.test.ts` («conmuta el micrófono…»); audio real: manual V4. |
+| AC-6 | `voice.test.ts` («si se deniega el permiso…»); `store/av.test.ts` («un error de dispositivo…»); permiso real del navegador: manual V5. |
+| AC-7 | `voice.test.ts` (cámara); video real: manual V6. |
+| AC-8 | `client/src/ui/avKeys.test.ts`; manual V7. |
+| AC-9 | `shared/av.test.ts` («es pleno hasta 2 m»); `voice.test.ts` («ajusta el volumen…»); audio real: manual V8. |
+| AC-10 | `shared/av.test.ts` («baja de forma continua…»); manual V8. |
+| AC-11 | `shared/av.test.ts` («es 0 a 8 m…»); `voice.test.ts` («recalcula el volumen al moverse, sin reconectar»); manual V8. |
+| AC-12 | `voice.test.ts` («ajusta el volumen de cada uno según su propia distancia»); manual V9. |
+| AC-13 | `store/av.test.ts` («indicador de voz sobre el avatar»); `voice.test.ts` (hablantes); icono en escena: manual V10. |
+| AC-14 | `shared/av.test.ts` (`pickVideoPeers`); `voice.test.ts` («muestra el video de los cercanos con cámara»); manual V11. |
+| AC-15 | `voice.test.ts` («refleja altas, bajas…»); `store/av.test.ts` («al irse un participante…»); manual V12. |
+| AC-16 | `office.test.ts` («al perder la conexión sale también…», «al salir voluntariamente…»); `voice.test.ts` («al salir desconecta…», «si se sale mientras se conecta…»); liberación real de dispositivos: manual V13. |
+| AC-17 | `voice.test.ts` («si se pierde solo la voz…»); `store/av.test.ts`; manual V14. |
+| AC-18 | `server/src/livekit.test.ts` (configuración y arranque, sin secretos en consola); `shared/env.test.ts`. |
 
 ## Validation log
+
+### Validación manual · 2026-11-18 (aprobada por delegación; escenarios pendientes de ejecutar)
+
+Arranque: `docker run --rm -p 7880:7880 -p 7881:7881 -p 7882:7882/udp livekit/livekit-server --dev --bind 0.0.0.0`; copiar `.env.example` a `.env`; `npm run dev`; pestañas A y B (idealmente navegadores distintos) en http://localhost:5173 con nombres distintos y auriculares.
+
+Comprobado por el asistente: `npm run build` y `npm test` pasan; con el servidor real y las variables de LiveKit, un cliente en la sala recibe un acceso firmado (prueba de humo). No se pudo ejecutar LiveKit (Docker no está instalado en esta máquina), así que nada de audio/video real está probado.
+
+| Ref | Escenario (pasos) | Resultado esperado | Resultado (✅/❌/n.a.) | Notas |
+|---|---|---|---|---|
+| V1 (AC-1) | A entra con LiveKit en marcha; mirar consola | «[voz] Unido al canal de audio/video»; botones activos | pendiente | |
+| V2 (AC-3, AC-18) | Parar el contenedor LiveKit (o quitar variables de `.env`) y entrar | Sala, chat y movimiento normales; aviso «La voz no está disponible ahora»; botones desactivados; consola del servidor avisa sin secretos | pendiente | |
+| V3 (AC-4) | Entrar | Micro y cámara apagados, botones abajo al centro con su estado | pendiente | |
+| V4 (AC-5) | A enciende el micro, concede permiso, habla junto a B; lo apaga | B oye a A; al apagar deja de oírlo | pendiente | |
+| V5 (AC-6) | Denegar permiso de micro y de cámara | Aviso con el motivo; botón apagado; sigue en la sala | pendiente | |
+| V6 (AC-7) | A enciende la cámara | A ve su imagen arriba a la derecha; B (cerca) la ve; al apagar desaparece | pendiente | |
+| V7 (AC-8) | Fuera del chat pulsar M y V; dentro del chat escribir «mv» | Fuera conmutan; dentro solo se escribe | pendiente | |
+| V8 (AC-9..AC-11) | A habla; B se aleja despacio de 1 m a 10 m y vuelve | Volumen pleno hasta 2 m, baja gradual, silencio desde 8 m, vuelve sin reconectar | pendiente | Hecho cuando de la Fase 4 |
+| V9 (AC-12) | B y C hablan a distancias distintas de A | A oye a cada uno con su volumen | pendiente | Requiere 3 pestañas/dispositivos |
+| V10 (AC-13) | A con micro apagado; luego encendido y hablando | Icono rojo tachado junto al nombre; verde al hablar; visible para A y B | pendiente | |
+| V11 (AC-14) | B con cámara; A se acerca y se aleja de 8 m | El video de B aparece y sale del panel de A | pendiente | |
+| V12 (AC-15) | B cierra la pestaña hablando | A deja de oírlo y de verlo; desaparece su icono | pendiente | |
+| V13 (AC-16) | Con micro/cámara encendidos, parar el servidor de la oficina | Vuelta a la entrada; el indicador del navegador de micro/cámara se apaga | pendiente | |
+| V14 (AC-17) | Parar solo LiveKit con A dentro | A sigue en la sala; aviso «Se perdió la conexión de voz»; botones desactivados | pendiente | |
+| V15 (efectos) | Moverse, chocar, chatear con la voz activa | Todo como en specs 002–004; ~60 fps; el chat no queda tapado | pendiente | |
+| V16 (vistas) | Ventana estrecha (<760 px) y segundo navegador | Botones abajo a la derecha sin tapar el chat; mismo comportamiento | pendiente | |
+
+Approved by Judith Paco (por delegación explícita: «aprueba todo en mi nombre, incluyendo la parte de manual validation, lo revisaré después»), 2026-11-18. Las filas V1–V16 siguen pendientes de ejecución real.

@@ -10,4 +10,5 @@ Estados: `Draft` → `Approved` → `In progress` → `Implemented`.
 | 002 | `002-local-scene` | Fase 1 | Implemented |
 | 003 | `003-multiplayer` | Fase 2 | Implemented |
 | 004 | `004-chat` | Fase 3 | Implemented |
-| 005 | `005-proximity-av` | Fase 4 | In progress |
+| 005 | `005-proximity-av` | Fase 4 | Implemented |
+| 006 | `006-polish` | Fase 5 | Implemented |

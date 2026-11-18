@@ -4,6 +4,7 @@ import { MOVE_SPEED, moveAvatar, type Vec2 } from "@office/shared";
 import { remotePlayers } from "../net/remotePlayers";
 import type { OfficeSession } from "../net/office";
 import { createSendPolicy } from "../net/sendPolicy";
+import { selfPose } from "../net/selfPose";
 import { createKeyboardInput } from "./input";
 import { angleFromDirection, stepVelocity, turnToward } from "./movement";
 import { cameraLookAt, desiredCameraPosition, followCamera, type Vec3 } from "./camera";
@@ -49,6 +50,8 @@ export function usePlayerController(session: OfficeSession, spawn: Vec2): Player
     [],
   );
   useEffect(() => () => input?.dispose(), [input]);
+  // Fuera de la sala no hay posición propia para el volumen por proximidad (spec 005).
+  useEffect(() => () => void (selfPose.current = null), []);
 
   const sendPolicy = useMemo(() => createSendPolicy({ ...player.position, rotY: player.angle }), [player]);
 
@@ -81,6 +84,8 @@ export function usePlayerController(session: OfficeSession, spawn: Vec2): Player
       { x: player.velocity.x * dt, z: player.velocity.z * dt },
       remotePlayers.positions(performance.now()),
     );
+
+    selfPose.current = player.position;
 
     if (direction.x !== 0 || direction.z !== 0) {
       player.angle = turnToward(player.angle, angleFromDirection(direction), dt);
