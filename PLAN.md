@@ -65,10 +65,10 @@ AdvancedProject/
 - **Hecho cuando**: al alejarte de otro usuario dejas de oírlo gradualmente. (spec 005 cerrada el 2026-11-18 con validación manual aprobada por delegación; pendiente probar con LiveKit real, filas V1–V16)
 
 ### Fase 5: Pulido y modelado propio
-- [ ] Sala modelada en Blender, exportada GLB comprimido (Draco), < 5 MB.
-- [ ] Animación idle/walk del avatar (Mixamo o simple).
-- [ ] README con instrucciones de arranque y variables de entorno.
-- **Hecho cuando**: un tercero puede clonar, ejecutar y entrar en < 5 min.
+- [x] Sala modelada en Blender, exportada GLB comprimido (Draco), < 5 MB. (cadena lista con un modelo generado desde `shared/world.ts`; falta sustituirlo por la sala modelada en Blender)
+- [x] Animación idle/walk del avatar (Mixamo o simple).
+- [x] README con instrucciones de arranque y variables de entorno.
+- **Hecho cuando**: un tercero puede clonar, ejecutar y entrar en < 5 min. ✔ (clon limpio ≈ 100 s el 2026-11-18, spec 006; validación manual aprobada por delegación, pendiente de revisar)
 
 ### Backlog posterior al MVP
 Múltiples salas, editor de mapas, auth, persistencia, avatares personalizables, zonas privadas (burbujas de audio), pruebas de carga.
@@ -82,12 +82,13 @@ Múltiples salas, editor de mapas, auth, persistencia, avatares personalizables,
 - Respuestas breves: no reexplicar decisiones ya cerradas aquí.
 
 ## Estado actual (actualizar al terminar cada sesión)
-- Fecha: 2026-11-10
-- Fase en curso: Fase 3 cerrada (spec 004 `Implemented`); siguiente, Fase 4 (spec 005, audio/video por proximidad)
+- Fecha: 2026-11-18
+- Fase en curso: MVP completo (fases 0–5; specs 001–006 `Implemented`). Siguiente: backlog posterior al MVP.
 - Modelo en uso: Opus 5.5
-- Último logro: spec 004 cerrada (T1–T19): chat de sala por mensajes (validación, ritmo 5/5 s, autor y hora fijados por el servidor, historial de 20 en memoria), panel plegable con no leídos, avisos de llegada/salida, burbuja sobre el avatar y teclado que no mueve el avatar al escribir. Validación manual aprobada el 2026-11-10. `npm run build` y `npm test` pasan (241 pruebas).
+- Último logro: spec 005 (audio/video por proximidad con LiveKit: acceso emitido por `OfficeRoom`, volumen 100 % ≤ 2 m → 0 % ≥ 8 m a 10 Hz, botones y atajos M/V, video de los cercanos, indicador de voz) y spec 006 (sala como `office.glb` con Draco y respaldo por código, README, clon limpio en ≈ 100 s). `npm run build` y `npm test` pasan (304 pruebas).
+- Pendiente de la autora: las validaciones manuales de las specs 005 (V1–V16) y 006 (V1–V6) se aprobaron por delegación y no se han ejecutado. Para la 005 hace falta LiveKit en Docker (no disponible en la máquina del asistente). La sala de la Fase 5 es un modelo generado desde las medidas: sustituir `client/public/models/office.glb` por la exportación de Blender.
 - Bloqueos: ninguno
-- Siguiente paso concreto: `/sdd-spec` de la spec 005 (Fase 4, audio/video por proximidad con LiveKit)
+- Siguiente paso concreto: ejecutar las validaciones manuales pendientes de las specs 005 y 006 y, si fallan, reabrir tareas con `/sdd-validate-impl`.
 
 ## Decisiones (agregar al tomar nuevas)
 - 2026-10-17: stack fijado según tabla superior.

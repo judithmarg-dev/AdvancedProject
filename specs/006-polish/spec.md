@@ -1,6 +1,6 @@
 # 006 · Pulido: sala como modelo 3D, animación y README
 
-- **Estado:** In progress
+- **Estado:** Implemented
 - **Fase del plan:** 5
 - **Fecha:** 2026-11-18
 
@@ -50,5 +50,30 @@ confirma la animación del avatar y documenta el arranque, para que el proyecto 
 ## Trazabilidad
 | AC | Prueba (archivo / método) o razón de no automatizar |
 |---|---|
+| AC-1 | `client/src/scene/roomModel.test.ts` (suelo, paredes, pared sur semitransparente, muebles sobre sus cajas de colisión, mallas con nombre); `roomModelSetup.test.ts` (sombras y transparencia restauradas); `roomAsset.test.ts` (nombres conservados en el GLB). Decodificación del GLB en Node: 35 mallas, igual que la sala por código (2026-11-18). Aspecto en WebGL: manual V1. |
+| AC-2 | `roomAsset.test.ts` («existe… y pesa menos de 5 MB», «es glTF binario comprimido con Draco»). 26,7 KB. |
+| AC-3 | Manual V2: requiere WebGL y red reales; la ruta de error de `Room.tsx` solo registra el aviso y deja la sala básica. |
+| AC-4 | Manual V3: carga real en navegador. |
+| AC-5 | `roomAsset.test.ts`; `roomModelSetup.test.ts` («funciona con un modelo ajeno…»); `npm run model -w client` regenera el archivo (ejecutado 2026-11-18); sustitución por un .glb de Blender: manual V4. |
+| AC-6 | `client/src/scene/animation.test.ts` (respiración y balanceo, specs 002/003, sin cambios). |
+| AC-7 | Clon limpio cronometrado (2026-11-18): clonar + instalar 18 s; `npm run dev` y entrada de un cliente en la sala 82 s; total ≈ 100 s < 5 min; `/models/office.glb` servido (200). Lectura del README por un tercero: manual V5. |
+| AC-8 | Manual V6: fps y colisiones en navegador (sin automatizar). Las colisiones no cambian (`shared/world.ts`, tests de la spec 002). |
 
 ## Validation log
+
+### Validación manual · 2026-11-18 (aprobada por delegación; escenarios pendientes de ejecutar)
+
+Arranque: `npm run dev`; http://localhost:5173.
+
+Comprobado por el asistente: `npm run build` y `npm test` pasan (304 pruebas); clon limpio arrancado y unido a la sala; el GLB se sirve y se decodifica completo. No hay navegador con WebGL disponible para el asistente.
+
+| Ref | Escenario (pasos) | Resultado esperado | Resultado (✅/❌/n.a.) | Notas |
+|---|---|---|---|---|
+| V1 (AC-1) | Abrir la página y entrar; consola | «[escena] Modelo de la sala cargado»; sala igual que antes (colores, ventanal, pared sur translúcida, sombras) | pendiente | |
+| V2 (AC-3) | Renombrar `office.glb` y recargar | Sala básica; aviso en consola; se puede entrar y jugar | pendiente | |
+| V3 (AC-4) | DevTools → red lenta (Slow 3G) y recargar | Se ve la sala básica y luego se sustituye por el modelo sin recargar | pendiente | |
+| V4 (AC-5) | Exportar una sala de Blender como `office.glb` (Draco) y recargar | Se ve la sala de Blender sin cambios de código | pendiente | |
+| V5 (AC-7) | Otra persona sigue el README desde cero | Entra en < 5 min | pendiente | |
+| V6 (AC-8, efectos) | Moverse, chocar con muebles y paredes, chat y voz | ~60 fps; colisiones como en la spec 002; resto sin cambios | pendiente | |
+
+Approved by Judith Paco (por delegación explícita: «aprueba todo en mi nombre, incluyendo la parte de manual validation, lo revisaré después»), 2026-11-18. Las filas V1–V6 siguen pendientes de ejecución real.

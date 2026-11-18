@@ -10,6 +10,6 @@ Orden: shared → server → client. Primero el test que falla, luego la impleme
 - [x] T6 · (AC-2, AC-5) Script `build-room-model.mts`, `npm run model`, generar `office.glb`.
 - [x] T7 · (AC-1, AC-3, AC-4) `Room.tsx`: respaldo + carga del modelo con aviso en consola.
 - [x] T8 · (AC-7) `README.md`.
-- [ ] T9 · (AC-7) Clon limpio cronometrado: instalar, build, arrancar, entrar.
-- [ ] T10 · Validación manual (`/sdd-validate-impl`).
-- [ ] T11 · Trazabilidad en `spec.md` y `/sdd-verify`; actualizar `PLAN.md`.
+- [x] T9 · (AC-7) Clon limpio cronometrado: instalar, build, arrancar, entrar.
+- [x] T10 · Validación manual (`/sdd-validate-impl`).
+- [x] T11 · Trazabilidad en `spec.md` y `/sdd-verify`; actualizar `PLAN.md`.
