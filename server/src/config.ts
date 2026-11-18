@@ -16,3 +16,13 @@ export function getPort(env: NodeJS.ProcessEnv = process.env): number {
   }
   return port;
 }
+
+export type LiveKitConfig = { url: string; apiKey: string; apiSecret: string };
+
+/** Conexión con LiveKit desde `.env`; `null` si falta alguna variable (la voz queda desactivada, spec 005 AC-18). */
+export function getLiveKitConfig(env: NodeJS.ProcessEnv = process.env): LiveKitConfig | null {
+  const url = env.LIVEKIT_URL?.trim();
+  const apiKey = env.LIVEKIT_API_KEY?.trim();
+  const apiSecret = env.LIVEKIT_API_SECRET?.trim();
+  return url && apiKey && apiSecret ? { url, apiKey, apiSecret } : null;
+}

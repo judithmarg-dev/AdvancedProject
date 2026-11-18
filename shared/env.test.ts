@@ -10,7 +10,9 @@ describe("variables de entorno", () => {
       .split("\n")
       .filter((line) => line.trim() !== "" && !line.startsWith("#"))
       .map((line) => line.split("=")[0]);
-    expect(keys).toEqual(expect.arrayContaining(["PORT", "VITE_SERVER_URL"]));
+    expect(keys).toEqual(
+      expect.arrayContaining(["PORT", "VITE_SERVER_URL", "LIVEKIT_URL", "LIVEKIT_API_KEY", "LIVEKIT_API_SECRET"]),
+    );
   });
 
   it(".env no se versiona", () => {

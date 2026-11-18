@@ -22,6 +22,8 @@ export const MSG = {
   chatNotice: "chatNotice",
   /** S→emisor: mensaje descartado por superar el ritmo (`ChatRejected`). */
   chatRejected: "chatRejected",
+  /** C→S: petición sin payload de acceso al canal de audio/video; S→C: respuesta (`AvAccess`). */
+  avAccess: "avAccess",
 } as const;
 
 /** Cliente → servidor: posición y orientación deseadas del propio avatar. */
@@ -60,8 +62,12 @@ export type ChatNotice = { kind: "joined" | "left"; name: string; sentAt: number
 /** S→emisor: por qué se descartó su mensaje. */
 export type ChatRejected = { reason: "rateLimited" };
 
+/** S→C: acceso al canal de audio/video (spec 005), o por qué no se concede. */
+export type AvAccess = { ok: true; url: string; token: string } | { ok: false; reason: "disabled" | "error" };
+
 export * from "./world";
 export * from "./players";
 export * from "./movementRules";
 export * from "./avatarCollision";
 export * from "./chat";
+export * from "./av";

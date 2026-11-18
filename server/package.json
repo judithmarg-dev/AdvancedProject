@@ -16,6 +16,7 @@
   "dependencies": {
     "@colyseus/core": "^0.18.20",
     "@colyseus/ws-transport": "^0.18.4",
-    "@office/shared": "*"
+    "@office/shared": "*",
+    "livekit-server-sdk": "^2.19.2"
   }
 }
